@@ -1,0 +1,26 @@
+SMMWE Server GUI
+Start
+Stop
+Checking runtime ... (1/5)
+Apache httpd server is missing, please re-download the program!
+php7 is missing, please re-download the program!
+DNSAgent DNS server is missing, please re-download the program!
+Writing Apache httpd config fileserver ... (2/5)
+Starting DNSAgent DNS Server ... (3/5)
+Installing SSL Certificate ... (4/5)
+Starting Apache httpd Server ... (5/5)
+SMMWE Cloud Private Server is runing.
+Open adapter settings
+Listening server ...
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
