@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-<assemblyIdentity type="win32" name="SMMWECloudPrivateServer" version="1.0.0.0" />
-  <file name="httpd\mswinsck\MSWINSCK.OCX">
-    <typelib tlbid="{248DD890-BB45-11CF-9ABC-0080C7E7B78D}" version="1.0" flags="control" helpdir="" />
-    <comClass clsid="{248DD896-BB45-11CF-9ABC-0080C7E7B78D}" tlbid="{248DD890-BB45-11CF-9ABC-0080C7E7B78D}" threadingModel="Apartment" progid="MSWinsock.Winsock.1" miscStatusIcon="recomposeonresize,cantlinkinside,insideout,activatewhenvisible,invisibleatruntime,setclientsitefirst" description="Microsoft Winsock Control" />
-  </file>
-</assembly>

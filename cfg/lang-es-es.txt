@@ -24,3 +24,15 @@ No se encontraron metadatos locales
 Sincronizando
 Iniciar sesion en el servidor
 Listo para cargar el Niveles Mundiales
+Prueba de conexion ... (5/5)
+Modo DNS
+Modo de host local
+Modo LAN
+Ayudar
+Primero detenga el servidor.
+Seleccione una direccion IP para usar.
+Personalizado
+Ahorrar
+Cancelar
+Informacion
+Se cargaron todos los metadatos, ahora puedes actualizar

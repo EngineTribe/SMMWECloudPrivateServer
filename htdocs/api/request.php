@@ -27,12 +27,16 @@ define('etiquetas',[
 function get_level($level_name){
     logtovb("Downloading level ".$level_name." ...");
     $curl=curl_init();
-    curl_setopt($curl, CURLOPT_URL, smmwe_cloud_apiurl . $level_name . ".swe");
-    curl_setopt($curl, CURLOPT_HEADER, 1);
+    //if(strpos($level_name,' ') !== false){ 
+        curl_setopt($curl, CURLOPT_URL, smmwe_cloud_apiurl . rawurlencode($level_name) . ".swe");
+    //   }else{
+    //    curl_setopt($curl, CURLOPT_URL, smmwe_cloud_apiurl . $level_name . ".swe");
+    //   };
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1) ;
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($curl, CURLOPT_HEADER, true);
     $return_data=curl_exec($curl);
     curl_close($curl);
     foreach (explode(PHP_EOL,$return_data) as $v) {
@@ -41,35 +45,63 @@ function get_level($level_name){
             //$level_url=substr($level_url,0,strlen($level_url)-1);
             $curl=curl_init();
             curl_setopt($curl, CURLOPT_URL, $level_url);
-            curl_setopt($curl, CURLOPT_HEADER, 1);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1) ;
             curl_setopt($curl, CURLOPT_TIMEOUT, 10);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($curl, CURLOPT_HEADER, false);
             $return_data=curl_exec($curl);
-            //echo $return_data;
             curl_close($curl);
-            return explode("\0", explode(PHP_EOL,$return_data)[count(explode(PHP_EOL,$return_data))-1])[0];
+            return str_replace("\0","",$return_data);
+            //return explode("\0", explode(PHP_EOL,$return_data)[count(explode(PHP_EOL,$return_data))-1])[0];
         };
     };
 };
 
 function save_level_metadata($level_name){
-    logtovb("Parsing metadata of level ".$level_name." ...");
+logtovb("Parsing metadata of level ".$level_name." ...");
 Client::initialize("NBPj0BUbArYBILwBIrrlCESJ-MdYXbMMI", "Hw2jUi14SmR0oXjdwB8x2RNe", "YJSkfTWVnfr5N4jD7vEJiEzE");
-$level_data="";
 $level_data=get_level($level_name);
+if (is_null($level_data)==true) {
+    //retry
+    logtovb("Retry 1 ".$level_name." ...");
+    $level_data=get_level($level_name);
+};
+if (is_null($level_data)==true) {
+    //retry 2
+    logtovb("Retry 2 ".$level_name." ...");
+    $level_data=get_level($level_name);
+};
+if (is_null($level_data)==true) {
+    //retry 3
+    logtovb("Retry 3 ".$level_name." ...");
+    $level_data=get_level($level_name);
+};
 //calculate level id
 $level_id=strtoupper(strval(substr(md5($level_data),8,16)));
 $level_id=strval(substr($level_id,0,4)."-".substr($level_id,4,4)."-".substr($level_id,8,4)."-".substr($level_id,12,4));
+//default
+$level_date="01/01/1970";
 //check duplicate
 if (is_null(get_metadata_by_id($level_id,"level_name"))==false) {
-$level_id=strtoupper(strval(substr($level_id,0,17).strval(dechex(rand(0,15))).strval(dechex(rand(0,15)))));
+    $level_id=strtoupper(strval(substr(md5($level_name),8,16)));
+    $level_id=strval(substr($level_id,0,4)."-".substr($level_id,4,4)."-".substr($level_id,8,4)."-".substr($level_id,12,4));
 };
 $level_data=json_decode(base64_decode(substr($level_data,0,strlen($level_data)-40)),true);
 $level_author=$level_data["MAIN"]["AJUSTES"][0]['user'];
-$level_apariencia=strval($level_data["MAIN"]["AJUSTES"][0]['apariencia']);
-$level_date=stripslashes(strval($level_data["MAIN"]["AJUSTES"][0]['date']));
+
+if (is_null($level_data)==true) {
+    $level_apariencia="3";
+} else {
+    $level_apariencia=strval($level_data["MAIN"]["AJUSTES"][0]['apariencia']);
+};
+
+if (is_null($level_data)==true) {
+    $level_date="01/01/1970";
+} else {
+    $level_date=stripslashes(strval($level_data["MAIN"]["AJUSTES"][0]['date']));
+};
+
 $level_label1=intval($level_data["MAIN"]["AJUSTES"][0]['etiqueta1']);
 if ($level_label1===-1) {
     $level_label1="---";
@@ -81,6 +113,9 @@ if ($level_label2===-1) {
     $level_label2="---";
 } else {
     $level_label2=etiquetas[$level_label2];
+};
+if (($level_label1==="Tradicional") && ($level_label2==="Tradicional")) {
+    $level_label2="---";
 };
 if (strlen($level_author)===0) {
     $level_author="SMMWE Cloud";
@@ -150,7 +185,6 @@ function list_levels($page) {
     $page_om=ceil($page/20);
     $curl=curl_init();
     curl_setopt($curl, CURLOPT_URL, smmwe_cloud_apiurl."?filename");
-    curl_setopt($curl, CURLOPT_HEADER, 1);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1) ;
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -242,7 +276,6 @@ return $return_data;
 function get_max_files() {
     $curl=curl_init();
     curl_setopt($curl, CURLOPT_URL, smmwe_cloud_apiurl."?maxfiles");
-    curl_setopt($curl, CURLOPT_HEADER, 1);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1) ;
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -261,16 +294,6 @@ $requests=array();
 
 foreach($parameters as $v){
     $requests = array_merge($requests , array(explode("=",$v)[0] => explode("=",$v)[1]) );
-};
-//check client
-if ($requests['test']!=="true"){
-if ($_SERVER['HTTP_USER_AGENT']!=="GameMaker HTTP"){
-header_remove("Content-Type");
-header_remove("Connection");
-header("HTTP/1.1 301 Moved Permanently"); 
-header("Location: https://cloud.smmwe.ml/");
-echo json_encode(array("message"=>"Utilice SMMWE Cloud para la version web.","error_type"=>"004"));
-};
 };
 
 if ($requests['type']==="login") {
@@ -307,7 +330,7 @@ if ($requests['type']==="login") {
             return;
         };
 } elseif ($requests['type']==="info") {
-    //echo log_to_vb("LogSystem test");
+    echo get_level($requests['id']);
     return;
 } elseif ($requests['type']==="stats") {
     echo json_encode(array("message"=>"PrivateServer Error: Not implemented.","error_type"=>"028"));

@@ -67,7 +67,7 @@ Begin VB.Form Form1
       Width           =   4935
    End
    Begin VB.Menu localemenu 
-      Caption         =   "Language/Idioma/界面语言"
+      Caption         =   "Language"
       Begin VB.Menu esEs 
          Caption         =   "Espanol"
       End
@@ -78,13 +78,30 @@ Begin VB.Form Form1
          Caption         =   "简体中文"
       End
    End
+   Begin VB.Menu DNSModeMenu 
+      Caption         =   "DNSMode"
+      Begin VB.Menu WorkAsLocalhost 
+         Caption         =   "Localhost"
+      End
+      Begin VB.Menu WorkAsLan 
+         Caption         =   "LAN"
+      End
+      Begin VB.Menu DNSModeHelpMenu 
+         Caption         =   "Help"
+      End
+   End
 End
 Attribute VB_Name = "Form1"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Private Declare Function InitCommonControls Lib "Comctl32.dll" () As Long
+Private Sub Form_Initialize()
+InitCommonControls
+End Sub
 Private Sub ButtonStart_Click()
+On Error Resume Next
 If ServerStarted = False Then
 ServerStarted = True
 ButtonStart.Caption = ConstStr(2)
@@ -214,6 +231,7 @@ Print #2, "</IfModule>"
 Print #2, "PHPIniDir " & Chr(34) & App.Path & "\php" & Chr(34)
 Close #2
 If CheckFileExists(App.Path & "\php\php.ini") = True Then Kill App.Path & "\php\php.ini"
+Sleep 50
 FileCopy App.Path & "\php\phpdefault.ini", App.Path & "\php\php.ini"
 Sleep 20
 DoEvents
@@ -221,39 +239,107 @@ Open App.Path & "\php\php.ini" For Append As #2
 Print #2, vbCrLf
 Print #2, "extension_dir = " & Chr(34) & App.Path & "\php\ext" & Chr(34)
 Close #2
-Sleep 30
+Sleep 20
+'DNS
 PBarSetPos 1, 40
 DoEvents
 LabelStatus.Caption = ConstStr(8)
+If CheckFileExists(App.Path & "\dnsagent\rules.cfg") Then Kill App.Path & "\dnsagent\rules.cfg"
+Sleep 50
+Open App.Path & "\dnsagent\rules.cfg" For Output As #8
+Print #8, "["
+Print #8, "    {"
+Print #8, "        " & Chr(34) & "Pattern" & Chr(34) & ": " & Chr(34) & "^smmwe\\.online$" & Chr(34) & ","
+Print #8, "        " & Chr(34) & "Address" & Chr(34) & ": " & Chr(34) & LANIP & Chr(34) & ","
+Print #8, "    }"
+Print #8, "]"
+Close #8
+Do Until CheckFileExists(App.Path & "\dnsagent\rules.cfg")
+Sleep 20
+Loop
+
+If CheckFileExists(App.Path & "\dnsagent\options.cfg") Then Kill App.Path & "\dnsagent\options.cfg"
+Sleep 50
+Open App.Path & "\dnsagent\options.cfg" For Output As #8
+Print #8, "{"
+Print #8, "    " & Chr(34) & "HideOnStart" & Chr(34) & ": true,"
+Print #8, "    " & Chr(34) & "ListenOn" & Chr(34) & ": " & Chr(34) & LANIP & ":53, [::1]" & Chr(34) & ","
+Print #8, "    " & Chr(34) & "DefaultNameServer" & Chr(34) & ": " & Chr(34) & "8.8.8.8" & Chr(34) & ","
+Print #8, "    " & Chr(34) & "UseHttpQuery" & Chr(34) & ": false,"
+Print #8, "    " & Chr(34) & "QueryTimeout" & Chr(34) & ": 4000,"
+Print #8, "    " & Chr(34) & "CompressionMutation" & Chr(34) & ": false,"
+Print #8, "    " & Chr(34) & "CacheResponse" & Chr(34) & ": true,"
+Print #8, "    " & Chr(34) & "CacheAge" & Chr(34) & ": 86400,"
+Print #8, "    " & Chr(34) & "NetworkWhitelist" & Chr(34) & ": null"
+Print #8, "}"
+Close #8
+Do Until CheckFileExists(App.Path & "\dnsagent\options.cfg")
+Sleep 20
+Loop
 If CheckExeIsRun("DNSAgent.exe") = False Then Shell App.Path & "\dnsagent\DNSAgent.exe", vbMinimizedNoFocus
 'WinSock
 LogSock.LocalPort = 6002
 LogSock.Listen
 LabelLog.Visible = True
 LabelLog.Caption = ConstStr(13)
+'Make SSL
 PBarSetPos 1, 60
 DoEvents
 LabelStatus.Caption = ConstStr(9)
 Shell "cmd /c " & Chr(34) & App.Path & "\cert\mkcert.exe" & Chr(34) & " -install", vbMinimizedNoFocus
 If CheckFileExists(App.Path & "\cert\smmwe.online.pem") Then Kill App.Path & "\cert\smmwe.online.pem"
 If CheckFileExists(App.Path & "\cert\smmwe.online-key.pem") Then Kill App.Path & "\cert\smmwe.online-key.pem"
-Sleep 10
-DoEvents
 Shell "cmd /c cd " & Chr(34) & App.Path & "\cert" & Chr(34) & " && " & Chr(34) & "mkcert.exe" & Chr(34) & " smmwe.online", vbMinimizedNoFocus
-Sleep 1500
+Do Until CheckFileExists(App.Path & "\cert\smmwe.online.pem")
+Sleep 50
 DoEvents
+Loop
 If CheckFileExists(App.Path & "\httpd\conf\ssl\server.crt") = True Then Kill App.Path & "\httpd\conf\ssl\server.crt"
 If CheckFileExists(App.Path & "\httpd\conf\ssl\server.key") = True Then Kill App.Path & "\httpd\conf\ssl\server.key"
+Sleep 100
 FileCopy App.Path & "\cert\smmwe.online.pem", App.Path & "\httpd\conf\ssl\server.crt"
 FileCopy App.Path & "\cert\smmwe.online-key.pem", App.Path & "\httpd\conf\ssl\server.key"
 PBarSetPos 1, 80
 LabelStatus.Caption = ConstStr(10)
+DoEvents
 Sleep 200
 If CheckFileExists(App.Path & "\logs\httpd.log") Then Kill App.Path & "\logs\httpd.log"
 If CheckFileExists(App.Path & "\logs\access.log") Then Kill App.Path & "\logs\access.log"
 If CheckFileExists(App.Path & "\logs\error.log") Then Kill App.Path & "\logs\error.log"
 If CheckFileExists(App.Path & "\httpd\logs\ssl_request.log") Then Kill App.Path & "\httpd\logs\ssl_request.log"
 Shell "cmd /c " & App.Path & "\httpd\bin\httpd.exe", vbHide
+LabelStatus.Caption = ConstStr(26)
+PBarSetPos 1, 90
+DoEvents
+If DNSMode = "local" Then
+'test smmwe.online connection
+Dim strIP As String
+If CheckFileExists(App.Path & "\cfg\SMMWEServer.tmp") Then Kill App.Path & "\cfg\SMMWEServer.tmp"
+Shell "cmd /c chcp 437 && ping smmwe.online -n 1 >" & Chr(34) & App.Path & "\cfg\SMMWEServer.tmp" & Chr(34)
+Do Until CheckFileExists(App.Path & "\cfg\SMMWEServer.tmp")
+Sleep 50
+DoEvents
+Loop
+Sleep 50
+Open App.Path & "\cfg\SMMWEServer.tmp" For Input As #6
+Do While Not EOF(6)
+Line Input #6, strIP
+If InStr(1, strIP, "Pinging smmwe.online") <> 0 Then Exit Do
+Loop
+Close #6
+If InStr(1, strIP, LANIP) = 0 Then
+Form2.Show
+Shell App.Path & "\cfg\kill-dnsagent.bat", vbMinimizedNoFocus
+Shell "taskkill /f /im httpd.exe"
+LogSock.Close
+PBarUnload 1
+LabelStatus.Visible = False
+LabelLog.Visible = False
+ServerStarted = False
+ButtonStart.Caption = ConstStr(1)
+Exit Sub
+End If
+'
 If GetDataSWE("https://smmwe.online/PrivateServer/test.html") <> "SMMWE Cloud Private Server is started!" Then
 Form2.Show
 Shell App.Path & "\cfg\kill-dnsagent.bat", vbMinimizedNoFocus
@@ -265,6 +351,7 @@ LabelLog.Visible = False
 ServerStarted = False
 ButtonStart.Caption = ConstStr(1)
 Exit Sub
+End If
 End If
 PBarUnload 1
 LabelStatus.Caption = ConstStr(11)
@@ -279,28 +366,23 @@ ButtonStart.Caption = ConstStr(1)
 End If
 End Sub
 
-Private Sub enUs_Click()
-Locale = "en-us"
-If CheckFileExists(App.Path & "\cfg\locale.txt") Then Kill App.Path & "\cfg\locale.txt"
-Open App.Path & "\cfg\locale.txt" For Output As #3
-Print #3, "en-us"
-Close #3
-End Sub
-
-Private Sub esEs_Click()
-Locale = "es-es"
-If CheckFileExists(App.Path & "\cfg\locale.txt") Then Kill App.Path & "\cfg\locale.txt"
-Open App.Path & "\cfg\locale.txt" For Output As #3
-Print #3, "es-es"
-Close #3
-End Sub
 
 
 Private Sub Form_Load()
-Open App.Path & "\cfg\locale.txt" For Input As #4
-Line Input #4, Locale
+'init & load config
+Open App.Path & "\cfg\version.txt" For Input As #4
+Line Input #4, Version
 Close #4
-Version = "b1.7"
+Open App.Path & "\cfg\cfg.txt" For Input As #4
+Line Input #4, Locale
+Line Input #4, DNSMode
+Line Input #4, LANIP
+Close #4
+'set dns mode
+If DNSMode = "local" Then WorkAsLocalhost.Checked = True
+If DNSMode = "lan" Then WorkAsLan.Checked = True
+If DNSMode = "local" Then LANIP = "127.0.0.1"
+'load conststr
 Open App.Path & "\cfg\lang-" & Locale & ".txt" For Input As #1
     LocaleTmp = ""
     LocaleTmp2 = ""
@@ -314,13 +396,18 @@ Close #1
 Form1.Caption = ConstStr(0) & " - " & Version
 ButtonStart.Caption = ConstStr(1)
 ProgBar.Caption = ""
+DNSModeMenu.Caption = ConstStr(27)
+WorkAsLocalhost.Caption = ConstStr(28)
+WorkAsLan.Caption = ConstStr(29)
+DNSModeHelpMenu.Caption = ConstStr(30)
 ServerStarted = False
 LabelStatus.Visible = False
 LabelLog.Visible = False
 End Sub
-
 Private Sub Form_Unload(Cancel As Integer)
+On Error Resume Next
 Shell "taskkill /f /im httpd.exe"
+End
 End Sub
 
 Private Sub LogSock_DataArrival(ByVal bytesTotal As Long)
@@ -339,6 +426,7 @@ Private Sub LogSock_DataArrival(ByVal bytesTotal As Long)
     strData = Replace(strData, "Synchronizing", ConstStr(23))
     strData = Replace(strData, "was logged into private server", ConstStr(24))
     strData = Replace(strData, "Loading course world", ConstStr(25))
+    strData = Replace(strData, "All the metadatas were loaded, now you can refresh", ConstStr(37))
     End If
      LogSock.Close
      LogSock.LocalPort = 6002
@@ -351,10 +439,45 @@ Private Sub LogSock_ConnectionRequest(ByVal RequestlD As Long)
             LogSock.Accept RequestlD
     End If
 End Sub
+
+Private Sub WorkAsLan_Click()
+'switch to lan mode
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
+DNSCFG.Show
+End If
+End Sub
+
+Private Sub WorkAsLocalhost_Click()
+'switch to localhost mode
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
+WorkAsLocalhost.Checked = True
+WorkAsLan.Checked = False
+LANIP = "127.0.0.1"
+DNSMode = "local"
+WriteCFG
+End If
+End Sub
+Private Sub DNSModeHelpMenu_Click()
+Form3.Show
+End Sub
+
+
 Private Sub zhCn_Click()
 Locale = "zh-cn"
-If CheckFileExists(App.Path & "\cfg\locale.txt") Then Kill App.Path & "\cfg\locale.txt"
-Open App.Path & "\cfg\locale.txt" For Output As #3
-Print #3, "zh-cn"
-Close #3
+WriteCFG
+Unload Form1
+End Sub
+Private Sub enUs_Click()
+Locale = "en-us"
+WriteCFG
+Unload Form1
+End Sub
+Private Sub esEs_Click()
+Locale = "es-es"
+WriteCFG
+Unload Form1
 End Sub
