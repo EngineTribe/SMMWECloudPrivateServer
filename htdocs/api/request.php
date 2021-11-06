@@ -5,6 +5,9 @@ use \LeanCloud\Client;
 use \LeanCloud\LeanObject;
 use \LeanCloud\Query;
 const smmwe_cloud_apiurl="https://smmwe-cloud.vercel.app/main/";
+const leancloud_api_id="p3DseF72y38R0vYItqEBBdJc-MdYXbMMI";
+const leancloud_api_key="CUwwobi3vLqfrTmlRWmtfuIj";
+const leancloud_master_key="4W9Y1SUxPOkJl861XVjItAjd";
 
 define('etiquetas',[
     'Tradicional',
@@ -60,7 +63,7 @@ function get_level($level_name){
 
 function save_level_metadata($level_name){
 logtovb("Parsing metadata of level ".$level_name." ...");
-Client::initialize("NBPj0BUbArYBILwBIrrlCESJ-MdYXbMMI", "Hw2jUi14SmR0oXjdwB8x2RNe", "YJSkfTWVnfr5N4jD7vEJiEzE");
+Client::initialize("p3DseF72y38R0vYItqEBBdJc-MdYXbMMI", "CUwwobi3vLqfrTmlRWmtfuIj", "4W9Y1SUxPOkJl861XVjItAjd");
 $level_data=get_level($level_name);
 if (is_null($level_data)==true) {
     //retry
@@ -120,6 +123,9 @@ if (($level_label1==="Tradicional") && ($level_label2==="Tradicional")) {
 if (strlen($level_author)===0) {
     $level_author="SMMWE Cloud";
 };
+if ($level_author==="0") {
+    $level_author="SMMWE Cloud";
+};
 logtovb("Posting metadata ".$level_id." to LeanCloud database ...");
 $metadataObject = new LeanObject("Metadata");
 $metadataObject->set("level_name", strval($level_name));
@@ -130,12 +136,20 @@ $metadataObject->set("level_date", $level_date);
 $metadataObject->set("level_label1", $level_label1);
 $metadataObject->set("level_label2", $level_label2);
 $metadataObject->save();
+$metadatas["level_name"]=$level_name;
+$metadatas["level_author"]=$level_author;
+$metadatas["level_date"]=$level_date;
+$metadatas["level_id"]=$level_id;
+$metadatas["level_apariencia"]=$level_apariencia;
+$metadatas["level_label1"]=$level_label1;
+$metadatas["level_label2"]=$level_label2;
+return $metadatas;
 };
 
 function object_array($array) {  
     if(is_object($array)) {  
         $array = (array)$array;  
-    } 
+    }
     if(is_array($array)) {
         foreach($array as $key=>$value) {  
             $array[$key] = object_array($value);  
@@ -145,7 +159,7 @@ function object_array($array) {
 };
 
 function get_metadata_by_id($level_id,$metadata) {
-    Client::initialize("NBPj0BUbArYBILwBIrrlCESJ-MdYXbMMI", "Hw2jUi14SmR0oXjdwB8x2RNe", "YJSkfTWVnfr5N4jD7vEJiEzE");
+    Client::initialize("p3DseF72y38R0vYItqEBBdJc-MdYXbMMI", "CUwwobi3vLqfrTmlRWmtfuIj", "4W9Y1SUxPOkJl861XVjItAjd");
     $query = new Query("Metadata");
     $query->equalTo("level_id", $level_id);
     $return_data = $query->first();
@@ -154,7 +168,7 @@ function get_metadata_by_id($level_id,$metadata) {
 };
 
 function get_metadata_by_name($level_name,$metadata) {
-    Client::initialize("NBPj0BUbArYBILwBIrrlCESJ-MdYXbMMI", "Hw2jUi14SmR0oXjdwB8x2RNe", "YJSkfTWVnfr5N4jD7vEJiEzE");
+    Client::initialize("p3DseF72y38R0vYItqEBBdJc-MdYXbMMI", "CUwwobi3vLqfrTmlRWmtfuIj", "4W9Y1SUxPOkJl861XVjItAjd");
     $query = new Query("Metadata");
     $query->equalTo("level_name", $level_name);
     $return_data = $query->first();
@@ -163,7 +177,7 @@ function get_metadata_by_name($level_name,$metadata) {
 };
 
 function gen_temp_metadata_by_name($level_name) {
-    Client::initialize("NBPj0BUbArYBILwBIrrlCESJ-MdYXbMMI", "Hw2jUi14SmR0oXjdwB8x2RNe", "YJSkfTWVnfr5N4jD7vEJiEzE");
+    Client::initialize("p3DseF72y38R0vYItqEBBdJc-MdYXbMMI", "CUwwobi3vLqfrTmlRWmtfuIj", "4W9Y1SUxPOkJl861XVjItAjd");
     $query = new Query("Metadata");
     $query->equalTo("level_name", $level_name);
     $return_data = $query->first();
@@ -172,7 +186,7 @@ function gen_temp_metadata_by_name($level_name) {
 };
 
 function gen_temp_metadata_by_id($level_id) {
-    Client::initialize("NBPj0BUbArYBILwBIrrlCESJ-MdYXbMMI", "Hw2jUi14SmR0oXjdwB8x2RNe", "YJSkfTWVnfr5N4jD7vEJiEzE");
+    Client::initialize("p3DseF72y38R0vYItqEBBdJc-MdYXbMMI", "CUwwobi3vLqfrTmlRWmtfuIj", "4W9Y1SUxPOkJl861XVjItAjd");
     $query = new Query("Metadata");
     $query->equalTo("level_id", $level_id);
     $return_data = $query->first();
@@ -202,15 +216,17 @@ function get_result($level_name) {
     logtovb("Trying to get level metadata for level: ".$level_name ." ...");
     //check if cloud metadata is created
     if (file_exists($_SERVER['DOCUMENT_ROOT']."\/cache\/".$level_name.".php")) {
-        logtovb("get_result: Local metadata found: ".$level_name .".php");
+        logtovb("Local metadata found: ".$level_name .".php");
     $result = include($_SERVER['DOCUMENT_ROOT']."\/cache\/".$level_name.".php");
+    return $result;
     } else {
-        logtovb("get_result: Local metadata not found: ".$level_name .".php, Synchronizing ...");
+        logtovb("Local metadata not found: ".$level_name .".php, Synchronizing ...");
     if (is_null(get_metadata_by_name($level_name,"level_id"))==true) {
         //create cloud metadata
-        save_level_metadata($level_name);
+        $metadata=save_level_metadata($level_name);
+    } else {
+        $metadata=gen_temp_metadata_by_name($level_name);
     };
-    $metadata=gen_temp_metadata_by_name($level_name);
     $level_author=$metadata["level_author"];
     $level_id=$metadata["level_id"];
     $level_apariencia=$metadata["level_apariencia"];
@@ -243,7 +259,7 @@ function get_result_by_id($level_id) {
         logtovb("get_result: Local metadata found: ".$level_name .".php");
     $result = include($_SERVER['DOCUMENT_ROOT']."\/cache\/".$level_name.".php");
     } else {
-        logtovb("get_result: Local metadata not found: ".$level_name .".php, Synchronizing ...");
+        logtovb("Local metadata not found: ".$level_name .".php, Synchronizing ...");
     $metadata=gen_temp_metadata_by_id($level_id);
     $level_author=$metadata["level_author"];
     $level_id=$metadata["level_id"];
@@ -307,7 +323,7 @@ if ($requests['type']==="login") {
         logtovb("Loading course world ...");
         $num_rows=get_max_files();
         $rows_perpage=10;
-        $max_pages=ceil(get_max_files()/10);
+        $max_pages=ceil($num_rows/10);
         $level_list=list_levels($requests['page']);
             $result[0]=get_result(str_replace(".swe","",$level_list[0]));
             $result[1]=get_result(str_replace(".swe","",$level_list[1]));
@@ -319,13 +335,14 @@ if ($requests['type']==="login") {
             $result[7]=get_result(str_replace(".swe","",$level_list[7]));
             $result[8]=get_result(str_replace(".swe","",$level_list[8]));
             $result[9]=get_result(str_replace(".swe","",$level_list[9]));
+            logtovb("All the metadatas were loaded, now you can refresh.");
         echo substr(str_replace("\"result\":{","\"result\":[{",urldecode(stripslashes(json_encode(array("type"=>"detailed_search","num_rows"=>strval($num_rows),"rows_perpage"=>strval($rows_perpage),"pages"=>strval($max_pages),"result"=>$result))))),0,-3) . "}]}";
         return;
         } elseif ($requests["by"]==="file") {
         echo json_encode(array("data"=>get_level(get_metadata_by_id($requests['id'],"level_name"))));
         return;
         } elseif ($requests['by']==="id") {
-            logtovb("Loading course world ...");
+            logtovb("Search ".$requests['id'] ." ...");
             echo json_encode(array("type"=>"id","result"=>get_result_by_id($requests['id'])));
             return;
         };

@@ -25,9 +25,9 @@ Sincronizando
 Iniciar sesion en el servidor
 Listo para cargar el Niveles Mundiales
 Prueba de conexion ... (5/5)
-Modo DNS
+Modo de Inicio
 Modo de host local
-Modo LAN
+Modo LAN (WIP)
 Ayudar
 Primero detenga el servidor.
 Seleccione una direccion IP para usar.
@@ -36,3 +36,4 @@ Ahorrar
 Cancelar
 Informacion
 Se cargaron todos los metadatos, ahora puedes actualizar
+Modo Hosts

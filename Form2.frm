@@ -38,6 +38,8 @@ Begin VB.Form Form2
       _ExtentX        =   15478
       _ExtentY        =   8493
       _Version        =   393217
+      Enabled         =   -1  'True
+      ScrollBars      =   2
       TextRTF         =   $"Form2.frx":25CA
    End
 End

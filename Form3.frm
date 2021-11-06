@@ -21,7 +21,7 @@ Begin VB.Form Form3
       _ExtentX        =   14420
       _ExtentY        =   9763
       _Version        =   393217
-      Enabled         =   -1  'True
+      ScrollBars      =   2
       TextRTF         =   $"Form3.frx":25CA
    End
 End
@@ -33,7 +33,7 @@ Attribute VB_Exposed = False
 Private Declare Function InitCommonControls Lib "Comctl32.dll" () As Long
 Private Sub Form_Load()
 Form3.Caption = ConstStr(36)
-RichTextBox1.FileName = App.Path & "\cfg\lanmode-" & Locale & ".rtf"
+RichTextBox1.FileName = App.Path & "\cfg\mode-" & Locale & ".rtf"
 End Sub
 Private Sub Form_Initialize()
 InitCommonControls

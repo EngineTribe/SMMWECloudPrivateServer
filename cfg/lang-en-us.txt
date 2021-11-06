@@ -25,9 +25,9 @@ Listening server ...
 1
 1
 Testing connection ... (5/5)
-DNS Mode
+Startup Mode
 Localhost mode
-LAN mode
+LAN mode (WIP)
 Help
 Please stop the server first.
 Select an IP address to use.
@@ -36,3 +36,4 @@ Save
 Cancel
 Message
 1
+Hosts mode

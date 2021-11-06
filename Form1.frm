@@ -86,9 +86,12 @@ Begin VB.Form Form1
       Begin VB.Menu WorkAsLan 
          Caption         =   "LAN"
       End
-      Begin VB.Menu DNSModeHelpMenu 
-         Caption         =   "Help"
+      Begin VB.Menu WorkAsHosts 
+         Caption         =   "Hosts"
       End
+   End
+   Begin VB.Menu HelpMenu 
+      Caption         =   "Help"
    End
 End
 Attribute VB_Name = "Form1"
@@ -167,7 +170,7 @@ Print #2, "Group daemon"
 Print #2, "</IfModule>"
 Print #2, "ServerAdmin smmwe_cloud@outlook.com"
 Print #2, "ServerName smmwe.online"
-Print #2, "SetEnv LEANCLOUD_API_SERVER https://nbpj0bub.api.lncldglobal.com"
+Print #2, "SetEnv LEANCLOUD_API_SERVER https://p3dsef72.api.lncldglobal.com"
 Print #2, "<Directory />"
     Print #2, "AllowOverride all"
     Print #2, "Require all granted"
@@ -244,6 +247,9 @@ Sleep 20
 PBarSetPos 1, 40
 DoEvents
 LabelStatus.Caption = ConstStr(8)
+'
+If DNSMode <> "hosts" Then
+'
 If CheckFileExists(App.Path & "\dnsagent\rules.cfg") Then Kill App.Path & "\dnsagent\rules.cfg"
 Sleep 50
 Open App.Path & "\dnsagent\rules.cfg" For Output As #8
@@ -276,7 +282,11 @@ Close #8
 Do Until CheckFileExists(App.Path & "\dnsagent\options.cfg")
 Sleep 20
 Loop
-If CheckExeIsRun("DNSAgent.exe") = False Then Shell App.Path & "\dnsagent\DNSAgent.exe", vbMinimizedNoFocus
+If CheckExeIsRun("DNSAgent.exe") = False Then Shell App.Path & "\dnsagent\DNSAgent.exe", vbHide
+Else
+'hosts mode
+Shell App.Path & "\cfg\enable-hosts.bat", vbHide
+End If
 'WinSock
 LogSock.LocalPort = 6002
 LogSock.Listen
@@ -286,10 +296,10 @@ LabelLog.Caption = ConstStr(13)
 PBarSetPos 1, 60
 DoEvents
 LabelStatus.Caption = ConstStr(9)
-Shell "cmd /c " & Chr(34) & App.Path & "\cert\mkcert.exe" & Chr(34) & " -install", vbMinimizedNoFocus
+Shell "cmd /c " & Chr(34) & App.Path & "\cert\mkcert.exe" & Chr(34) & " -install", vbHide
 If CheckFileExists(App.Path & "\cert\smmwe.online.pem") Then Kill App.Path & "\cert\smmwe.online.pem"
 If CheckFileExists(App.Path & "\cert\smmwe.online-key.pem") Then Kill App.Path & "\cert\smmwe.online-key.pem"
-Shell "cmd /c cd " & Chr(34) & App.Path & "\cert" & Chr(34) & " && " & Chr(34) & "mkcert.exe" & Chr(34) & " smmwe.online", vbMinimizedNoFocus
+Shell "cmd /c cd " & Chr(34) & App.Path & "\cert" & Chr(34) & " && " & Chr(34) & "mkcert.exe" & Chr(34) & " smmwe.online", vbHide
 Do Until CheckFileExists(App.Path & "\cert\smmwe.online.pem")
 Sleep 50
 DoEvents
@@ -307,42 +317,22 @@ If CheckFileExists(App.Path & "\logs\httpd.log") Then Kill App.Path & "\logs\htt
 If CheckFileExists(App.Path & "\logs\access.log") Then Kill App.Path & "\logs\access.log"
 If CheckFileExists(App.Path & "\logs\error.log") Then Kill App.Path & "\logs\error.log"
 If CheckFileExists(App.Path & "\httpd\logs\ssl_request.log") Then Kill App.Path & "\httpd\logs\ssl_request.log"
+
+If CheckExeIsRun("DNSAgent.exe") = True Then
+Shell "taskkill /f /im httpd.exe"
+Sleep 30
+End If
 Shell "cmd /c " & App.Path & "\httpd\bin\httpd.exe", vbHide
+
 LabelStatus.Caption = ConstStr(26)
 PBarSetPos 1, 90
 DoEvents
 If DNSMode = "local" Then
 'test smmwe.online connection
-Dim strIP As String
-If CheckFileExists(App.Path & "\cfg\SMMWEServer.tmp") Then Kill App.Path & "\cfg\SMMWEServer.tmp"
-Shell "cmd /c chcp 437 && ping smmwe.online -n 1 >" & Chr(34) & App.Path & "\cfg\SMMWEServer.tmp" & Chr(34)
-Do Until CheckFileExists(App.Path & "\cfg\SMMWEServer.tmp")
-Sleep 50
-DoEvents
-Loop
-Sleep 50
-Open App.Path & "\cfg\SMMWEServer.tmp" For Input As #6
-Do While Not EOF(6)
-Line Input #6, strIP
-If InStr(1, strIP, "Pinging smmwe.online") <> 0 Then Exit Do
-Loop
-Close #6
-If InStr(1, strIP, LANIP) = 0 Then
-Form2.Show
-Shell App.Path & "\cfg\kill-dnsagent.bat", vbMinimizedNoFocus
-Shell "taskkill /f /im httpd.exe"
-LogSock.Close
-PBarUnload 1
-LabelStatus.Visible = False
-LabelLog.Visible = False
-ServerStarted = False
-ButtonStart.Caption = ConstStr(1)
-Exit Sub
-End If
-'
 If GetDataSWE("https://smmwe.online/PrivateServer/test.html") <> "SMMWE Cloud Private Server is started!" Then
 Form2.Show
-Shell App.Path & "\cfg\kill-dnsagent.bat", vbMinimizedNoFocus
+If DNSMode = "hosts" Then Shell App.Path & "\cfg\disable-hosts.bat", vbHide
+If DNSMode <> "hosts" Then Shell "taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbHide
 Shell "taskkill /f /im httpd.exe"
 LogSock.Close
 PBarUnload 1
@@ -356,7 +346,8 @@ End If
 PBarUnload 1
 LabelStatus.Caption = ConstStr(11)
 Else
-Shell App.Path & "\cfg\kill-dnsagent.bat", vbMinimizedNoFocus
+If DNSMode = "hosts" Then Shell App.Path & "\cfg\disable-hosts.bat", vbHide
+If DNSMode <> "hosts" Then Shell "taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbHide
 Shell "taskkill /f /im httpd.exe"
 LogSock.Close
 LabelStatus.Visible = False
@@ -399,7 +390,8 @@ ProgBar.Caption = ""
 DNSModeMenu.Caption = ConstStr(27)
 WorkAsLocalhost.Caption = ConstStr(28)
 WorkAsLan.Caption = ConstStr(29)
-DNSModeHelpMenu.Caption = ConstStr(30)
+WorkAsHosts.Caption = ConstStr(38)
+HelpMenu.Caption = ConstStr(30)
 ServerStarted = False
 LabelStatus.Visible = False
 LabelLog.Visible = False
@@ -408,6 +400,10 @@ Private Sub Form_Unload(Cancel As Integer)
 On Error Resume Next
 Shell "taskkill /f /im httpd.exe"
 End
+End Sub
+
+Private Sub HelpMenu_Click()
+Form3.Show
 End Sub
 
 Private Sub LogSock_DataArrival(ByVal bytesTotal As Long)
@@ -440,11 +436,28 @@ Private Sub LogSock_ConnectionRequest(ByVal RequestlD As Long)
     End If
 End Sub
 
+Private Sub WorkAsHosts_Click()
+'switch to hosts mode
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
+WorkAsHosts.Checked = True
+WorkAsLan.Checked = False
+WorkAsLocalhost.Checked = False
+LANIP = "127.0.0.1"
+DNSMode = "hosts"
+WriteCFG
+End If
+End Sub
+
 Private Sub WorkAsLan_Click()
 'switch to lan mode
 If ServerStarted Then
 MsgBox ConstStr(31), vbCritical, "Error"
 Else
+WorkAsLocalhost.Checked = False
+WorkAsLan.Checked = True
+WorkAsHosts.Checked = False
 DNSCFG.Show
 End If
 End Sub
@@ -456,13 +469,11 @@ MsgBox ConstStr(31), vbCritical, "Error"
 Else
 WorkAsLocalhost.Checked = True
 WorkAsLan.Checked = False
+WorkAsHosts.Checked = False
 LANIP = "127.0.0.1"
 DNSMode = "local"
 WriteCFG
 End If
-End Sub
-Private Sub DNSModeHelpMenu_Click()
-Form3.Show
 End Sub
 
 
