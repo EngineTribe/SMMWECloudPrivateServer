@@ -21,8 +21,9 @@ Begin VB.Form Form3
       _ExtentX        =   14420
       _ExtentY        =   9763
       _Version        =   393217
+      Enabled         =   -1  'True
       ScrollBars      =   2
-      TextRTF         =   $"Form3.frx":25CA
+      TextRTF         =   $"Form3.frx":1BEA
    End
 End
 Attribute VB_Name = "Form3"

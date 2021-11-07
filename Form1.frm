@@ -108,7 +108,7 @@ On Error Resume Next
 If ServerStarted = False Then
 ServerStarted = True
 ButtonStart.Caption = ConstStr(2)
-PBarLoad 1, Me.hwnd, ProgBar.Left \ Screen.TwipsPerPixelX, ProgBar.Top \ Screen.TwipsPerPixelY, ProgBar.Width \ Screen.TwipsPerPixelX, ProgBar.Height \ Screen.TwipsPerPixelY
+PBarLoad 1, Me.hWnd, ProgBar.Left \ Screen.TwipsPerPixelX, ProgBar.Top \ Screen.TwipsPerPixelY, ProgBar.Width \ Screen.TwipsPerPixelX, ProgBar.Height \ Screen.TwipsPerPixelY
 PBarSetRange 1, 0, 100
 PBarSetPos 1, 0
 DoEvents

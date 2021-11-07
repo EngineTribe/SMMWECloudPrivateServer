@@ -46,9 +46,9 @@ Begin VB.Form DNSCFG
    End
    Begin VB.ComboBox Combo1 
       Height          =   435
-      ItemData        =   "DNSCFG.frx":25CA
+      ItemData        =   "DNSCFG.frx":1BEA
       Left            =   120
-      List            =   "DNSCFG.frx":25CC
+      List            =   "DNSCFG.frx":1BEC
       TabIndex        =   1
       Top             =   600
       Width           =   5055
