@@ -208,9 +208,9 @@ function list_levels($page)
 
 function upload_level($level_name,$level_data,$level_apariencia,$level_label1,$level_label2)
 {
-    logtovb("Uploading level ".$level_name." ...");
+    logtovb("Uploading level ". rawurldecode($level_name)." ...");
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_API . "?upload=" . rawurlencode($level_name) . '.swe&key=yidaozhan-gq-franyer-farias-apiv2');
+    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_API . "?upload=" . $level_name . '.swe&key=yidaozhan-gq-franyer-farias-apiv2');
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 0);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -220,8 +220,8 @@ function upload_level($level_name,$level_data,$level_apariencia,$level_label1,$l
     curl_setopt($curl, CURLOPT_POSTFIELDS, $level_data);
     error_log(curl_exec($curl));
     curl_close($curl);
-    $metadatas["level_name"] = $level_name;
-    $level_data_parsed=parse_level_metadata($level_name,$level_data);
+    $metadatas["level_name"] = rawurldecode($level_name);
+    $level_data_parsed=parse_level_metadata(rawurldecode($level_name),$level_data);
     $metadatas["level_author"] = $level_data_parsed['level_author'];
     $metadatas["level_date"] = $level_data_parsed['level_date'];
     $metadatas["level_id"] = $level_data_parsed['level_id'];
