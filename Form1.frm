@@ -108,7 +108,7 @@ On Error Resume Next
 If ServerStarted = False Then
 ServerStarted = True
 ButtonStart.Caption = ConstStr(2)
-PBarLoad 1, Me.hWnd, ProgBar.Left \ Screen.TwipsPerPixelX, ProgBar.Top \ Screen.TwipsPerPixelY, ProgBar.Width \ Screen.TwipsPerPixelX, ProgBar.Height \ Screen.TwipsPerPixelY
+PBarLoad 1, Me.hwnd, ProgBar.Left \ Screen.TwipsPerPixelX, ProgBar.Top \ Screen.TwipsPerPixelY, ProgBar.Width \ Screen.TwipsPerPixelX, ProgBar.Height \ Screen.TwipsPerPixelY
 PBarSetRange 1, 0, 100
 PBarSetPos 1, 0
 DoEvents
@@ -285,7 +285,10 @@ Loop
 If CheckExeIsRun("DNSAgent.exe") = False Then Shell App.Path & "\dnsagent\DNSAgent.exe", vbHide
 Else
 'hosts mode
-Shell App.Path & "\cfg\enable-hosts.bat", vbHide
+'Shell App.Path & "\cfg\enable-hosts.bat", vbHide
+ShellExecute 0, "runas", "cmd", "/c copy /y " & Chr(34) & "%WINDIR%\System32\drivers\etc\hosts" & Chr(34) & " " & Chr(34) & "%WINDIR%\System32\drivers\etc\hosts.bak" & Chr(34), vbNullString, vbHide
+ShellExecute 0, "runas", "cmd", "/c echo 127.0.0.1 smmwe.online>>" & Chr(34) & "%WINDIR%\System32\drivers\etc\hosts" & Chr(34), vbNullString, vbHide
+
 End If
 'WinSock
 LogSock.LocalPort = 6002
@@ -331,8 +334,9 @@ If DNSMode = "local" Then
 'test smmwe.online connection
 If GetDataSWE("https://smmwe.online/PrivateServer/test.html") <> "SMMWE Cloud Private Server is started!" Then
 Form2.Show
-If DNSMode = "hosts" Then Shell App.Path & "\cfg\disable-hosts.bat", vbHide
-If DNSMode <> "hosts" Then Shell "taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbHide
+'If DNSMode = "hosts" Then Shell App.Path & "\cfg\disable-hosts.bat", vbHide
+If DNSMode = "hosts" Then ShellExecute 0, "runas", App.Path & "\cfg\disable-hosts.bat", "", vbNullString, vbHide
+ShellExecute 0, "runas", "cmd", "/c taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbNullString, vbHide
 Shell "taskkill /f /im httpd.exe"
 LogSock.Close
 PBarUnload 1
@@ -346,8 +350,8 @@ End If
 PBarUnload 1
 LabelStatus.Caption = ConstStr(11)
 Else
-If DNSMode = "hosts" Then Shell App.Path & "\cfg\disable-hosts.bat", vbHide
-If DNSMode <> "hosts" Then Shell "taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbHide
+If DNSMode = "hosts" Then ShellExecute 0, "runas", App.Path & "\cfg\disable-hosts.bat", "", vbNullString, vbHide
+ShellExecute 0, "runas", "cmd", "/c taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbNullString, vbHide
 Shell "taskkill /f /im httpd.exe"
 LogSock.Close
 LabelStatus.Visible = False
@@ -372,6 +376,7 @@ Close #4
 'set dns mode
 If DNSMode = "local" Then WorkAsLocalhost.Checked = True
 If DNSMode = "lan" Then WorkAsLan.Checked = True
+If DNSMode = "hosts" Then WorkAsHosts.Checked = True
 If DNSMode = "local" Then LANIP = "127.0.0.1"
 'load conststr
 Open App.Path & "\cfg\lang-" & Locale & ".txt" For Input As #1

@@ -1,4 +1,5 @@
 <?php
+header("Content-Type: text/html; charset=utf-8");
 $lang=substr($_SERVER['HTTP_ACCEPT_LANGUAGE'],0,4);
 if (preg_match("/zh-c/i",$lang)) {
 echo "<p>SMMWE Cloud 私服正在工作！</p>";
