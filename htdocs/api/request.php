@@ -1,6 +1,9 @@
 <?php
 set_time_limit(0);
 require_once("autoload.php");
+global $config;
+//load config
+$config = include($_SERVER['DOCUMENT_ROOT'] . "/config.php");
 
 use \LeanCloud\Client;
 use \LeanCloud\LeanObject;
@@ -31,30 +34,39 @@ define('etiquetas', [
 
 function get_level($level_name)
 {
-    logtovb("Downloading level " . $level_name . " ...");
-    $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . rawurlencode($level_name) . ".swe");
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($curl, CURLOPT_HEADER, true);
-    $return_data = curl_exec($curl);
-    curl_close($curl);
-    foreach (explode("\r\n", $return_data) as $v) {
-        if (substr($v, 0, 8) == "location") {
-            $level_url = str_replace("location: ", "", $v);
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_URL, $level_url);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curl, CURLOPT_HEADER, false);
-            $return_data = curl_exec($curl);
-            curl_close($curl);
-            return str_replace("\0", "", $return_data);
-            //return explode("\0", explode(PHP_EOL,$return_data)[count(explode(PHP_EOL,$return_data))-1])[0];
+    global $config;
+    if (file_exists($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe")) {
+        $return_data = file_get_contents($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe");
+        return $return_data;
+    } else {
+        //download the level
+        logtovb("Downloading level " . $level_name . " ...");
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . rawurlencode($level_name) . ".swe");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curl, CURLOPT_HEADER, true);
+        $return_data = curl_exec($curl);
+        curl_close($curl);
+        foreach (explode("\r\n", $return_data) as $v) {
+            if (substr($v, 0, 8) == "location") {
+                $level_url = str_replace("location: ", "", $v);
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_URL, $level_url);
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($curl, CURLOPT_HEADER, false);
+                $return_data = str_replace("\0", "", curl_exec($curl));
+                curl_close($curl);
+                if ($config['cache_levels'] == true) {
+                    file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe", $return_data);
+                };
+                return $return_data;
+            };
         };
     };
 };
@@ -206,9 +218,9 @@ function list_levels($page)
     return $return_data;
 };
 
-function upload_level($level_name,$level_data,$level_apariencia,$level_label1,$level_label2)
+function upload_level($level_name, $level_data, $level_apariencia, $level_label1, $level_label2)
 {
-    logtovb("Uploading level ". rawurldecode($level_name)." ...");
+    logtovb("Uploading level " . rawurldecode($level_name) . " ...");
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_API . "?upload=" . $level_name . '.swe&key=yidaozhan-gq-franyer-farias-apiv2');
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
@@ -221,7 +233,7 @@ function upload_level($level_name,$level_data,$level_apariencia,$level_label1,$l
     error_log(curl_exec($curl));
     curl_close($curl);
     $metadatas["level_name"] = rawurldecode($level_name);
-    $level_data_parsed=parse_level_metadata(rawurldecode($level_name),$level_data);
+    $level_data_parsed = parse_level_metadata(rawurldecode($level_name), $level_data);
     $metadatas["level_author"] = $level_data_parsed['level_author'];
     $metadatas["level_date"] = $level_data_parsed['level_date'];
     $metadatas["level_id"] = $level_data_parsed['level_id'];
@@ -229,7 +241,7 @@ function upload_level($level_name,$level_data,$level_apariencia,$level_label1,$l
     $metadatas["level_label1"] = $level_label1;
     $metadatas["level_label2"] = $level_label2;
     post_level_metadata($metadatas);
-    return json_encode(array("message" => "Completado.", "error_type" =>$metadatas["level_id"]));
+    return json_encode(array("message" => "Completado.", "error_type" => $metadatas["level_id"]));
 };
 
 
@@ -237,9 +249,9 @@ function get_result($level_name)
 {
     logtovb("Trying to get level metadata for level: " . $level_name . " ...");
     //check if cloud metadata is created
-    if (file_exists($_SERVER['DOCUMENT_ROOT'] . "\/cache\/" . $level_name . ".php")) {
+    if (file_exists($_SERVER['DOCUMENT_ROOT'] . "/cache/" . $level_name . ".php")) {
         logtovb("Local metadata found: " . $level_name . ".php");
-        $result = include($_SERVER['DOCUMENT_ROOT'] . "\/cache\/" . $level_name . ".php");
+        $result = include($_SERVER['DOCUMENT_ROOT'] . "/cache/" . $level_name . ".php");
         return $result;
         //exit function
     } else {
@@ -282,7 +294,7 @@ function get_result($level_name)
         $uploaded_date = $metadata["level_date"];
         $result = array("name" => $level_name, "img" => "https://smmwe.online/new_level.png", "likes" => "0", "downloads" => "1", "comments" => "0", "dislikes" => "0", "intentos" => "0", "muertes" => "0", "victorias" => "0", "apariencia" => $level_apariencia, "entorno" => $level_entorno, "etiquetas" => $level_etiquetas, "featured" => "0", "user_data" => array("data" => "no", "completed" => "no", "liked" => "0"), "record" => array("record" => "no"), "date" => $uploaded_date, "author" => $level_author, "authorimg" => "https://smmwe.online/favicon.png", "description" => urlencode("Sin Descripción"), "id" => $level_id);
         //write local cache
-        file_put_contents($_SERVER['DOCUMENT_ROOT'] . "\/cache\/" . $level_name . ".php", "<?php\nreturn " . var_export($result, true) . ";\n");
+        file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/cache/" . $level_name . ".php", "<?php\nreturn " . var_export($result, true) . ";\n");
     };
     return $result;
 };
@@ -297,9 +309,9 @@ function get_result_by_id($level_id)
         return $result;
     };
     //check if cloud metadata is created
-    if (file_exists($_SERVER['DOCUMENT_ROOT'] . "\/cache\/" . $level_name . ".php")) {
+    if (file_exists($_SERVER['DOCUMENT_ROOT'] . "/cache/" . $level_name . ".php")) {
         logtovb("get_result: Local metadata found: " . $level_name . ".php");
-        $result = include($_SERVER['DOCUMENT_ROOT'] . "\/cache\/" . $level_name . ".php");
+        $result = include($_SERVER['DOCUMENT_ROOT'] . "/cache/" . $level_name . ".php");
     } else {
         logtovb("Local metadata not found: " . $level_name . ".php, Synchronizing ...");
         $metadata = gen_metadata_by_id($level_id);
@@ -316,7 +328,7 @@ function get_result_by_id($level_id)
         $uploaded_date = $metadata["level_date"];
         $result = array("name" => $level_name, "img" => "https://smmwe.online/new_level.png", "likes" => "0", "downloads" => "1", "comments" => "0", "dislikes" => "0", "intentos" => "0", "muertes" => "0", "victorias" => "0", "apariencia" => $level_apariencia, "entorno" => $level_entorno, "etiquetas" => $level_etiquetas, "featured" => "0", "user_data" => array("data" => "no", "completed" => "no", "liked" => "0"), "record" => array("record" => "no"), "date" => $uploaded_date, "author" => $level_author, "authorimg" => "https://smmwe.online/favicon.png", "description" => urlencode("Sin Descripción"), "id" => $level_id);
         //write local cache
-        file_put_contents($_SERVER['DOCUMENT_ROOT'] . "\/cache\/" . $level_name . ".php", "<?php\nreturn " . var_export($result, true) . ";\n");
+        file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/cache/" . $level_name . ".php", "<?php\nreturn " . var_export($result, true) . ";\n");
     };
     return $result;
 };
@@ -324,13 +336,18 @@ function get_result_by_id($level_id)
 function logtovb($log)
 {
     //post log to SMMWEServerGUI
-    $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-    socket_set_block($socket);
-    socket_connect($socket, '127.0.0.1', 6002);
-    $return_data = socket_write($socket, $log, strlen($log));
-    socket_close($socket);
+    global $config;
+    if ($config['linux_mode'] == false) {
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        socket_set_block($socket);
+        socket_connect($socket, '127.0.0.1', 6002);
+        $return_data = socket_write($socket, $log, strlen($log));
+        socket_close($socket);
+    };
     error_log($log);
-    return $return_data;
+    if ($config['linux_mode'] == false) {
+        return $return_data;
+    };
 };
 
 function get_max_files()
@@ -347,6 +364,20 @@ function get_max_files()
     logtovb("Got " . $return_data . " levels.");
     return intval($return_data);
 };
+
+function get_file_counts($ff)
+//https://blog.csdn.net/weixin_33525438/article/details/116183798
+{
+    $handle = opendir($ff);
+    $i = 0;
+    while (false !== $file = (readdir($handle))) {
+        if ($file !== '.' && $file != '..') {
+            $i++;
+        }
+    }
+    closedir($handle);
+    return $i;
+}
 
 header('Content-Type: application/json; charset=utf-8');
 header('Connection: keep-alive');
@@ -401,8 +432,96 @@ if ($requests['type'] === "login") {
     error_log("Status system is not implemented, ignored.");
     return;
 } elseif ($requests['type'] === "upload") {
-    $level_label=explode(",",$requests['lvl_tags']);
-    echo upload_level($requests['lvl_name'],str_replace("lvl_swe=","",file_get_contents("php://input")),$requests['lvl_aparience'],$level_label[0],$level_label[1]);
+    $level_label = explode(",", $requests['lvl_tags']);
+    echo upload_level($requests['lvl_name'], str_replace("lvl_swe=", "", file_get_contents("php://input")), $requests['lvl_aparience'], $level_label[0], $level_label[1]);
+    return;
+} elseif ($requests['type'] === "statistics") {
+    header("Content-Type: text/html; charset=utf-8");
+    $lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 4);
+    Client::initialize(LEANCLOUD_API_ID, LEANCLOUD_API_KEY, LEANCLOUD_MASTER_KEY);
+    $query = new Query("Metadata");
+    if (preg_match("/zh/i", $lang)) {
+        echo "<p>SMMWE Cloud 私服 统计数据</p>";
+
+        echo "<table border=\"1\">";
+        echo "<tr>";
+        echo "<td>关卡数量</td>";
+        echo "<td>" . strval(get_max_files()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>云端元数据数量</td>";
+        echo "<td>" . strval($query->count()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>缓存元数据数量</td>";
+        echo "<td>" . strval(get_file_counts($_SERVER['DOCUMENT_ROOT'] . "/cache")) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>缓存关卡数量</td>";
+        echo "<td>" . strval(get_file_counts($_SERVER['DOCUMENT_ROOT'] . "/level_cache")) . "</td>";
+        echo "</tr>";
+
+        echo "</table>";
+
+        echo "<p>运行于 ".php_uname().", PHP版本 ".PHP_VERSION."</p>";
+    } elseif (preg_match("/en/i",$lang)) {
+        echo "<p>SMMWE Cloud Private Server statistics</p>";
+
+        echo "<table border=\"1\">";
+        echo "<tr>";
+        echo "<td>Level count</td>";
+        echo "<td>" . strval(get_max_files()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Metadata count</td>";
+        echo "<td>" . strval($query->count()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Cached metadata count</td>";
+        echo "<td>" . strval(get_file_counts($_SERVER['DOCUMENT_ROOT'] . "/cache")) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Cached level count</td>";
+        echo "<td>" . strval(get_file_counts($_SERVER['DOCUMENT_ROOT'] . "/level_cache")) . "</td>";
+        echo "</tr>";
+
+        echo "</table>";
+
+        echo "<p>Running on ".php_uname().", PHP Version ".PHP_VERSION."</p>";
+    } elseif (preg_match("/es/i",$lang)) {
+        echo "<p>SMMWE Cloud Servidor Privado estadisticas</p>";
+
+        echo "<table border=\"1\">";
+        echo "<tr>";
+        echo "<td>Conteo de niveles</td>";
+        echo "<td>" . strval(get_max_files()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Conteo de metadatos</td>";
+        echo "<td>" . strval($query->count()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Conteo de metadatos en cache</td>";
+        echo "<td>" . strval(get_file_counts($_SERVER['DOCUMENT_ROOT'] . "/cache")) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Conteo de niveles en cache</td>";
+        echo "<td>" . strval(get_file_counts($_SERVER['DOCUMENT_ROOT'] . "/level_cache")) . "</td>";
+        echo "</tr>";
+
+        echo "</table>";
+
+        echo "<p>El servidor se esta ejecutando en ".php_uname().", PHP Version ".PHP_VERSION."</p>";
+    };
     return;
 } else {
     echo json_encode(array("message" => "No se aclara el tipo de solicitud.", "error_type" => "001"));

@@ -90,8 +90,23 @@ Begin VB.Form Form1
          Caption         =   "Hosts"
       End
    End
-   Begin VB.Menu HelpMenu 
+   Begin VB.Menu HelpParentMenu 
       Caption         =   "Help"
+      Begin VB.Menu HelpMenu 
+         Caption         =   "Help"
+      End
+      Begin VB.Menu StatisticsMenu 
+         Caption         =   "Statistics"
+      End
+   End
+   Begin VB.Menu OthersParentMenu 
+      Caption         =   "Others"
+      Begin VB.Menu EditCfgMenu 
+         Caption         =   "EditCfg"
+      End
+      Begin VB.Menu ConnectTestMenu 
+         Caption         =   "ConnectTest"
+      End
    End
 End
 Attribute VB_Name = "Form1"
@@ -100,6 +115,23 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Private Declare Function InitCommonControls Lib "Comctl32.dll" () As Long
+
+Private Sub ConnectTestMenu_Click()
+If ServerStarted = False Then
+MsgBox ConstStr(40), vbCritical, "Error"
+Else
+Shell "cmd /c start " & Chr(34) & Chr(34) & " " & Chr(34) & "https://smmwe.online/test/test.html" & Chr(34)
+End If
+End Sub
+
+Private Sub EditCfgMenu_Click()
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
+Shell "cmd /c notepad " & Chr(34) & App.Path & "\htdocs\config.php" & Chr(34)
+End If
+End Sub
+
 Private Sub Form_Initialize()
 InitCommonControls
 End Sub
@@ -319,7 +351,7 @@ Sleep 200
 If CheckFileExists(App.Path & "\logs\httpd.log") Then Kill App.Path & "\logs\httpd.log"
 If CheckFileExists(App.Path & "\logs\access.log") Then Kill App.Path & "\logs\access.log"
 If CheckFileExists(App.Path & "\logs\error.log") Then Kill App.Path & "\logs\error.log"
-If CheckFileExists(App.Path & "\httpd\logs\ssl_request.log") Then Kill App.Path & "\httpd\logs\ssl_request.log"
+If CheckFileExists(App.Path & "\logs\error.log") Then Kill App.Path & "\logs\ssl.log"
 
 If CheckExeIsRun("DNSAgent.exe") = True Then
 Shell "taskkill /f /im httpd.exe"
@@ -332,7 +364,7 @@ PBarSetPos 1, 90
 DoEvents
 If DNSMode = "local" Then
 'test smmwe.online connection
-If GetDataSWE("https://smmwe.online/PrivateServer/test.html") <> "SMMWE Cloud Private Server is started!" Then
+If GetDataSWE("https://smmwe.online/test/test.html") <> "SMMWE Cloud Private Server is started!" Then
 Form2.Show
 'If DNSMode = "hosts" Then Shell App.Path & "\cfg\disable-hosts.bat", vbHide
 If DNSMode = "hosts" Then ShellExecute 0, "runas", App.Path & "\cfg\disable-hosts.bat", "", vbNullString, vbHide
@@ -397,6 +429,11 @@ WorkAsLocalhost.Caption = ConstStr(28)
 WorkAsLan.Caption = ConstStr(29)
 WorkAsHosts.Caption = ConstStr(38)
 HelpMenu.Caption = ConstStr(30)
+HelpParentMenu.Caption = ConstStr(30)
+StatisticsMenu.Caption = ConstStr(39)
+OthersParentMenu.Caption = ConstStr(41)
+EditCfgMenu.Caption = ConstStr(42)
+ConnectTestMenu.Caption = ConstStr(43)
 ServerStarted = False
 LabelStatus.Visible = False
 LabelLog.Visible = False
@@ -441,6 +478,14 @@ Private Sub LogSock_ConnectionRequest(ByVal RequestlD As Long)
     End If
 End Sub
 
+Private Sub StatisticsMenu_Click()
+If ServerStarted = False Then
+MsgBox ConstStr(40), vbCritical, "Error"
+Else
+Shell "cmd /c start " & Chr(34) & Chr(34) & " " & Chr(34) & "https://smmwe.online/api/request?type=statistics" & Chr(34)
+End If
+End Sub
+
 Private Sub WorkAsHosts_Click()
 'switch to hosts mode
 If ServerStarted Then
@@ -483,17 +528,29 @@ End Sub
 
 
 Private Sub zhCn_Click()
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
 Locale = "zh-cn"
 WriteCFG
 Unload Form1
+End If
 End Sub
 Private Sub enUs_Click()
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
 Locale = "en-us"
 WriteCFG
 Unload Form1
+End If
 End Sub
 Private Sub esEs_Click()
+If ServerStarted Then
+MsgBox ConstStr(31), vbCritical, "Error"
+Else
 Locale = "es-es"
 WriteCFG
 Unload Form1
+End If
 End Sub

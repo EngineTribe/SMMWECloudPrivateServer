@@ -37,3 +37,8 @@ Cancelar
 Informacion
 Se cargaron todos los metadatos, ahora puedes actualizar
 Modo Hosts
+Estadisticas
+Primero inicie el servidor.
+Otros
+Editar la config del servidor
+Prueba de inicio

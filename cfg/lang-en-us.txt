@@ -37,3 +37,8 @@ Cancel
 Message
 1
 Hosts mode
+Statistics
+Please start the server first.
+Others
+Edit server config file
+Startup test
