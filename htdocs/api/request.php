@@ -41,7 +41,7 @@ function get_level($level_name)
     curl_setopt($curl, CURLOPT_HEADER, true);
     $return_data = curl_exec($curl);
     curl_close($curl);
-    foreach (explode(PHP_EOL, $return_data) as $v) {
+    foreach (explode("\r\n", $return_data) as $v) {
         if (substr($v, 0, 8) == "location") {
             $level_url = str_replace("location: ", "", $v);
             $curl = curl_init();
