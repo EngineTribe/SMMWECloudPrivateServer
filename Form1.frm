@@ -4,8 +4,8 @@ Begin VB.Form Form1
    BackColor       =   &H80000014&
    Caption         =   "Form1"
    ClientHeight    =   2520
-   ClientLeft      =   165
-   ClientTop       =   810
+   ClientLeft      =   225
+   ClientTop       =   870
    ClientWidth     =   5265
    BeginProperty Font 
       Name            =   "Î¢ÈíÑÅºÚ"
@@ -357,7 +357,7 @@ If CheckExeIsRun("DNSAgent.exe") = True Then
 Shell "taskkill /f /im httpd.exe"
 Sleep 30
 End If
-Shell "cmd /c " & App.Path & "\httpd\bin\httpd.exe", vbHide
+Shell "cmd /c " & App.Path & "\httpd\bin\httpd.exe -d " & Chr(34) & Replace(App.Path & "\httpd", "\", "/") & Chr(34), vbHide
 
 LabelStatus.Caption = ConstStr(26)
 PBarSetPos 1, 90
@@ -382,6 +382,7 @@ End If
 PBarUnload 1
 LabelStatus.Caption = ConstStr(11)
 Else
+PBarUnload 1
 If DNSMode = "hosts" Then ShellExecute 0, "runas", App.Path & "\cfg\disable-hosts.bat", "", vbNullString, vbHide
 ShellExecute 0, "runas", "cmd", "/c taskkill /f /im DNSAgent.exe && ipconfig /flushdns", vbNullString, vbHide
 Shell "taskkill /f /im httpd.exe"

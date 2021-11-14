@@ -1,9 +1,13 @@
 <?php
 set_time_limit(0);
-require_once("autoload.php");
 global $config;
 //load config
 $config = include($_SERVER['DOCUMENT_ROOT'] . "/config.php");
+if ($config['linux_mode'] == true) {
+    require_once("autoload-linux.php");
+} else {
+    require_once("autoload.php");
+};
 
 use \LeanCloud\Client;
 use \LeanCloud\LeanObject;
@@ -199,12 +203,31 @@ function gen_metadata_by_id($level_id)
     return json_decode(str_replace("\u0000", "", json_encode(object_array($return_data[0]))), true)["LeanCloud\LeanObject_data"];
 };
 
-function list_levels($page)
+function list_levels_byname($page)
 {
     logtovb("Listing levels ...");
     $page_om = ceil($page / 20);
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . "?filename");
+    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . "?apiv3-filename");
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($curl, CURLOPT_POST, 1);
+    curl_setopt($curl, CURLOPT_HEADER, false);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, "pagenum=" . $page_om);
+    $return_data = curl_exec($curl);
+    $return_data = array_slice(explode("\n", $return_data), (($page - (($page_om - 1) * 20)) - 1) * 10, 10);
+    curl_close($curl);
+    return $return_data;
+};
+
+function list_levels_newarrival($page)
+{
+    logtovb("Listing levels ...");
+    $page_om = ceil($page / 20);
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . "?apiv3-filename-time");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -350,10 +373,24 @@ function logtovb($log)
     };
 };
 
+function get_storage()
+{
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . "?apiv3-diskspace");
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($curl, CURLOPT_HEADER, false);
+    $return_data = curl_exec($curl);
+    curl_close($curl);
+    return $return_data;
+};
+
 function get_max_files()
 {
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . "?maxfiles");
+    curl_setopt($curl, CURLOPT_URL, SMMWE_CLOUD_URL_ROOT . "?apiv3-maxfiles");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -402,7 +439,11 @@ if ($requests['type'] === "login") {
         $num_rows = get_max_files();
         $rows_perpage = 10;
         $max_pages = ceil($num_rows / 10);
-        $level_list = list_levels($requests['page']);
+        if ($requests['sort']==="popular"){
+            $level_list = list_levels_byname($requests['page']);
+        } else {
+            $level_list = list_levels_newarrival($requests['page']);
+        };
         $result[0] = get_result(str_replace(".swe", "", $level_list[0]));
         $result[1] = get_result(str_replace(".swe", "", $level_list[1]));
         $result[2] = get_result(str_replace(".swe", "", $level_list[2]));
@@ -425,6 +466,7 @@ if ($requests['type'] === "login") {
         return;
     };
 } elseif ($requests['type'] === "devel") {
+    //devel param is just for test
     echo get_level($requests['id']);
     return;
 } elseif ($requests['type'] === "stats") {
@@ -444,9 +486,20 @@ if ($requests['type'] === "login") {
         echo "<p>SMMWE Cloud 私服 统计数据</p>";
 
         echo "<table border=\"1\">";
+
         echo "<tr>";
-        echo "<td>关卡数量</td>";
+        echo "<td>API 版本</td>";
+        echo "<td>" . "V3" . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>云端关卡数量</td>";
         echo "<td>" . strval(get_max_files()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>云端存储占用</td>";
+        echo "<td>" . get_storage() . "</td>";
         echo "</tr>";
 
         echo "<tr>";
@@ -466,14 +519,25 @@ if ($requests['type'] === "login") {
 
         echo "</table>";
 
-        echo "<p>运行于 ".php_uname().", PHP版本 ".PHP_VERSION."</p>";
-    } elseif (preg_match("/en/i",$lang)) {
+        echo "<p>运行于 " . php_uname() . ", PHP版本 " . PHP_VERSION . "</p>";
+    } elseif (preg_match("/en/i", $lang)) {
         echo "<p>SMMWE Cloud Private Server statistics</p>";
 
         echo "<table border=\"1\">";
+
+        echo "<tr>";
+        echo "<td>API Version</td>";
+        echo "<td>" . "V3" . "</td>";
+        echo "</tr>";
+
         echo "<tr>";
         echo "<td>Level count</td>";
         echo "<td>" . strval(get_max_files()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Online storage</td>";
+        echo "<td>" . get_storage() . "</td>";
         echo "</tr>";
 
         echo "<tr>";
@@ -493,14 +557,25 @@ if ($requests['type'] === "login") {
 
         echo "</table>";
 
-        echo "<p>Running on ".php_uname().", PHP Version ".PHP_VERSION."</p>";
-    } elseif (preg_match("/es/i",$lang)) {
+        echo "<p>Running on " . php_uname() . ", PHP Version " . PHP_VERSION . "</p>";
+    } elseif (preg_match("/es/i", $lang)) {
         echo "<p>SMMWE Cloud Servidor Privado estadisticas</p>";
 
         echo "<table border=\"1\">";
+
+        echo "<tr>";
+        echo "<td>API Version</td>";
+        echo "<td>" . "V3" . "</td>";
+        echo "</tr>";
+
         echo "<tr>";
         echo "<td>Conteo de niveles</td>";
         echo "<td>" . strval(get_max_files()) . "</td>";
+        echo "</tr>";
+
+        echo "<tr>";
+        echo "<td>Almacenamiento en linea</td>";
+        echo "<td>" . get_storage() . "</td>";
         echo "</tr>";
 
         echo "<tr>";
@@ -520,7 +595,7 @@ if ($requests['type'] === "login") {
 
         echo "</table>";
 
-        echo "<p>El servidor se esta ejecutando en ".php_uname().", PHP Version ".PHP_VERSION."</p>";
+        echo "<p>El servidor se esta ejecutando en " . php_uname() . ", PHP Version " . PHP_VERSION . "</p>";
     };
     return;
 } else {
