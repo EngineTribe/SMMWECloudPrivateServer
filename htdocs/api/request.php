@@ -455,7 +455,7 @@ if ($requests['type'] === "login") {
         $result[8] = get_result(str_replace(".swe", "", $level_list[8]));
         $result[9] = get_result(str_replace(".swe", "", $level_list[9]));
         logtovb("All the metadatas were loaded, now you can refresh.");
-        echo substr(str_replace("\"result\":{", "\"result\":[{", urldecode(stripslashes(json_encode(array("type" => "detailed_search", "num_rows" => strval($num_rows), "rows_perpage" => strval($rows_perpage), "pages" => strval($max_pages), "result" => $result))))), 0, -3) . "}]}";
+        echo substr(str_replace("\"result\":{", "\"result\":[{", urldecode(stripslashes(json_encode(array("type" => "detailed_search", "num_rows" => strval($num_rows), "rows_perpage" => strval($rows_perpage), "pages" => strval($max_pages), "result" => $result),JSON_UNESCAPED_UNICODE)))), 0, -3) . "}]}";
         return;
     } elseif ($requests["by"] === "file") {
         echo json_encode(array("data" => get_level(get_metadata_by_id($requests['id'], "level_name"))));
