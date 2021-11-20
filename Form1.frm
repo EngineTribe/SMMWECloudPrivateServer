@@ -99,6 +99,15 @@ Begin VB.Form Form1
          Caption         =   "Statistics"
       End
    End
+   Begin VB.Menu MirrorParent 
+      Caption         =   "Mirror"
+      Begin VB.Menu CloudFlareMenu 
+         Caption         =   "CloudFlare"
+      End
+      Begin VB.Menu VercelMenu 
+         Caption         =   "Vercel"
+      End
+   End
    Begin VB.Menu OthersParentMenu 
       Caption         =   "Others"
       Begin VB.Menu EditCfgMenu 
@@ -116,6 +125,70 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Private Declare Function InitCommonControls Lib "Comctl32.dll" () As Long
 
+Private Sub CloudFlareMenu_Click()
+Mirror = "cloudflare"
+CloudFlareMenu.Checked = True
+VercelMenu.Checked = False
+WriteCFG
+End Sub
+Private Sub VercelMenu_Click()
+Mirror = "vercel"
+CloudFlareMenu.Checked = False
+VercelMenu.Checked = True
+WriteCFG
+End Sub
+
+Private Sub Form_Load()
+'init & load config
+Open App.Path & "\htdocs\version.txt" For Input As #4
+Line Input #4, Version
+Close #4
+Open App.Path & "\cfg\cfg.txt" For Input As #4
+Line Input #4, Locale
+Line Input #4, DNSMode
+Line Input #4, LANIP
+Line Input #4, Mirror
+Close #4
+'set dns mode
+If DNSMode = "local" Then WorkAsLocalhost.Checked = True
+If DNSMode = "lan" Then WorkAsLan.Checked = True
+If DNSMode = "hosts" Then WorkAsHosts.Checked = True
+If DNSMode = "local" Then LANIP = "127.0.0.1"
+'mirror
+If Mirror = "cloudflare" Then
+CloudFlareMenu.Checked = True
+Else
+VercelMenu.Checked = True
+End If
+'load conststr
+Open App.Path & "\cfg\lang-" & Locale & ".txt" For Input As #1
+    LocaleTmp = ""
+    LocaleTmp2 = ""
+    Do While Not EOF(1)
+    Line Input #1, LocaleTmp2
+    LocaleTmp = LocaleTmp & LocaleTmp2 & vbCrLf
+    Loop
+    ConstStr = Split(LocaleTmp, vbCrLf)
+    ReDim Preserve ConstStr(UBound(ConstStr) + 1)
+Close #1
+Form1.Caption = ConstStr(0) & " - " & Version
+ButtonStart.Caption = ConstStr(1)
+ProgBar.Caption = ""
+DNSModeMenu.Caption = ConstStr(27)
+WorkAsLocalhost.Caption = ConstStr(28)
+WorkAsLan.Caption = ConstStr(29)
+WorkAsHosts.Caption = ConstStr(38)
+HelpMenu.Caption = ConstStr(30)
+HelpParentMenu.Caption = ConstStr(30)
+StatisticsMenu.Caption = ConstStr(39)
+OthersParentMenu.Caption = ConstStr(41)
+EditCfgMenu.Caption = ConstStr(42)
+ConnectTestMenu.Caption = ConstStr(43)
+MirrorParent.Caption = ConstStr(46)
+ServerStarted = False
+LabelStatus.Visible = False
+LabelLog.Visible = False
+End Sub
 Private Sub ConnectTestMenu_Click()
 If ServerStarted = False Then
 MsgBox ConstStr(40), vbCritical, "Error"
@@ -136,12 +209,14 @@ Private Sub Form_Initialize()
 InitCommonControls
 End Sub
 Private Sub ButtonStart_Click()
+'Start the server
 On Error Resume Next
 If ServerStarted = False Then
 ServerStarted = True
 ButtonStart.Caption = ConstStr(2)
 PBarLoad 1, Me.hWnd, ProgBar.Left \ Screen.TwipsPerPixelX, ProgBar.Top \ Screen.TwipsPerPixelY, ProgBar.Width \ Screen.TwipsPerPixelX, ProgBar.Height \ Screen.TwipsPerPixelY
 PBarSetRange 1, 0, 100
+'Check runtime environment (1/5)
 PBarSetPos 1, 0
 DoEvents
 LabelStatus.Visible = True
@@ -158,6 +233,24 @@ If CheckFileExists(App.Path & "\dnsagent\DNSAgent.exe") = False Then
 MsgBox ConstStr(6)
 Exit Sub
 End If
+'check ssl
+If CheckFileExists(App.Path & "\cert\smmwe.online.pem") = False Then
+MsgBox ConstStr(44) & vbCrLf & ConstStr(45), vbOKOnly + vbExclamation, "SMMWE Cloud Private Server"
+Shell "cmd /c " & Chr(34) & App.Path & "\cert\mkcert.exe" & Chr(34) & " -install", vbHide
+If CheckFileExists(App.Path & "\cert\smmwe.online.pem") Then Kill App.Path & "\cert\smmwe.online.pem"
+If CheckFileExists(App.Path & "\cert\smmwe.online-key.pem") Then Kill App.Path & "\cert\smmwe.online-key.pem"
+Shell "cmd /c cd " & Chr(34) & App.Path & "\cert" & Chr(34) & " && " & Chr(34) & "mkcert.exe" & Chr(34) & " smmwe.online", vbHide
+Do Until CheckFileExists(App.Path & "\cert\smmwe.online.pem")
+Sleep 50
+DoEvents
+Loop
+If CheckFileExists(App.Path & "\httpd\conf\ssl\server.crt") = True Then Kill App.Path & "\httpd\conf\ssl\server.crt"
+If CheckFileExists(App.Path & "\httpd\conf\ssl\server.key") = True Then Kill App.Path & "\httpd\conf\ssl\server.key"
+Sleep 100
+FileCopy App.Path & "\cert\smmwe.online.pem", App.Path & "\httpd\conf\ssl\server.crt"
+FileCopy App.Path & "\cert\smmwe.online-key.pem", App.Path & "\httpd\conf\ssl\server.key"
+End If
+'Write httpd config (2/5)
 PBarSetPos 1, 20
 DoEvents
 LabelStatus.Caption = ConstStr(7)
@@ -275,7 +368,24 @@ Print #2, vbCrLf
 Print #2, "extension_dir = " & Chr(34) & App.Path & "\php\ext" & Chr(34)
 Close #2
 Sleep 20
-'DNS
+'mirror php
+If CheckFileExists(App.Path & "\htdocs\domain.php") Then Kill App.Path & "\htdocs\domain.php"
+If Mirror = "cloudflare" Then
+Open App.Path & "\htdocs\domain.php" For Output As #10
+Print #10, "<?php return array ("
+Print #10, "'smmwe_cloud_url_root' => 'https://cloud.smmwe.ml/main/',"
+Print #10, "'smmwe_cloud_url_api' => 'https://api.smmwe.ml/smmweroot/'"
+Print #10, "); ?>"
+Close #10
+Else
+Open App.Path & "\htdocs\domain.php" For Output As #10
+Print #10, "<?php return array ("
+Print #10, "'smmwe_cloud_url_root' => 'https://smmwe-cloud.vercel.app/main/',"
+Print #10, "'smmwe_cloud_url_api' => 'https://smmwe-cloud-apiv2.sydzy2.workers.dev/smmweroot/'"
+Print #10, "); ?>"
+Close #10
+End If
+'DNS (3/5)
 PBarSetPos 1, 40
 DoEvents
 LabelStatus.Caption = ConstStr(8)
@@ -327,27 +437,10 @@ LogSock.LocalPort = 6002
 LogSock.Listen
 LabelLog.Visible = True
 LabelLog.Caption = ConstStr(13)
-'Make SSL
+'launch httpd (4/5)
 PBarSetPos 1, 60
 DoEvents
 LabelStatus.Caption = ConstStr(9)
-Shell "cmd /c " & Chr(34) & App.Path & "\cert\mkcert.exe" & Chr(34) & " -install", vbHide
-If CheckFileExists(App.Path & "\cert\smmwe.online.pem") Then Kill App.Path & "\cert\smmwe.online.pem"
-If CheckFileExists(App.Path & "\cert\smmwe.online-key.pem") Then Kill App.Path & "\cert\smmwe.online-key.pem"
-Shell "cmd /c cd " & Chr(34) & App.Path & "\cert" & Chr(34) & " && " & Chr(34) & "mkcert.exe" & Chr(34) & " smmwe.online", vbHide
-Do Until CheckFileExists(App.Path & "\cert\smmwe.online.pem")
-Sleep 50
-DoEvents
-Loop
-If CheckFileExists(App.Path & "\httpd\conf\ssl\server.crt") = True Then Kill App.Path & "\httpd\conf\ssl\server.crt"
-If CheckFileExists(App.Path & "\httpd\conf\ssl\server.key") = True Then Kill App.Path & "\httpd\conf\ssl\server.key"
-Sleep 100
-FileCopy App.Path & "\cert\smmwe.online.pem", App.Path & "\httpd\conf\ssl\server.crt"
-FileCopy App.Path & "\cert\smmwe.online-key.pem", App.Path & "\httpd\conf\ssl\server.key"
-PBarSetPos 1, 80
-LabelStatus.Caption = ConstStr(10)
-DoEvents
-Sleep 200
 If CheckFileExists(App.Path & "\logs\httpd.log") Then Kill App.Path & "\logs\httpd.log"
 If CheckFileExists(App.Path & "\logs\access.log") Then Kill App.Path & "\logs\access.log"
 If CheckFileExists(App.Path & "\logs\error.log") Then Kill App.Path & "\logs\error.log"
@@ -360,8 +453,12 @@ End If
 Shell "cmd /c " & App.Path & "\httpd\bin\httpd.exe -d " & Chr(34) & Replace(App.Path & "\httpd", "\", "/") & Chr(34), vbHide
 
 LabelStatus.Caption = ConstStr(26)
-PBarSetPos 1, 90
+
+'Test connection (5/5)
+PBarSetPos 1, 80
+LabelStatus.Caption = ConstStr(10)
 DoEvents
+Sleep 200
 If DNSMode = "local" Then
 'test smmwe.online connection
 If GetDataSWE("https://smmwe.online/test/test.html") <> "SMMWE Cloud Private Server is started!" Then
@@ -396,49 +493,6 @@ End Sub
 
 
 
-Private Sub Form_Load()
-'init & load config
-Open App.Path & "\cfg\version.txt" For Input As #4
-Line Input #4, Version
-Close #4
-Open App.Path & "\cfg\cfg.txt" For Input As #4
-Line Input #4, Locale
-Line Input #4, DNSMode
-Line Input #4, LANIP
-Close #4
-'set dns mode
-If DNSMode = "local" Then WorkAsLocalhost.Checked = True
-If DNSMode = "lan" Then WorkAsLan.Checked = True
-If DNSMode = "hosts" Then WorkAsHosts.Checked = True
-If DNSMode = "local" Then LANIP = "127.0.0.1"
-'load conststr
-Open App.Path & "\cfg\lang-" & Locale & ".txt" For Input As #1
-    LocaleTmp = ""
-    LocaleTmp2 = ""
-    Do While Not EOF(1)
-    Line Input #1, LocaleTmp2
-    LocaleTmp = LocaleTmp & LocaleTmp2 & vbCrLf
-    Loop
-    ConstStr = Split(LocaleTmp, vbCrLf)
-    ReDim Preserve ConstStr(UBound(ConstStr) + 1)
-Close #1
-Form1.Caption = ConstStr(0) & " - " & Version
-ButtonStart.Caption = ConstStr(1)
-ProgBar.Caption = ""
-DNSModeMenu.Caption = ConstStr(27)
-WorkAsLocalhost.Caption = ConstStr(28)
-WorkAsLan.Caption = ConstStr(29)
-WorkAsHosts.Caption = ConstStr(38)
-HelpMenu.Caption = ConstStr(30)
-HelpParentMenu.Caption = ConstStr(30)
-StatisticsMenu.Caption = ConstStr(39)
-OthersParentMenu.Caption = ConstStr(41)
-EditCfgMenu.Caption = ConstStr(42)
-ConnectTestMenu.Caption = ConstStr(43)
-ServerStarted = False
-LabelStatus.Visible = False
-LabelLog.Visible = False
-End Sub
 Private Sub Form_Unload(Cancel As Integer)
 On Error Resume Next
 Shell "taskkill /f /im httpd.exe"

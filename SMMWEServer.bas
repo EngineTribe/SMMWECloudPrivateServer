@@ -2,12 +2,13 @@ Attribute VB_Name = "SMMWEServer"
 Public Locale As String
 Public DNSMode As String
 Public LANIP As String
+Public Mirror As String
 Public ConstStr() As String
 Public Version As String
 Public ServerStarted As Boolean
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Private Declare Function GetIpAddrTable_API Lib "IpHlpApi" Alias "GetIpAddrTable" (pIPAddrTable As Any, pdwSize As Long, ByVal bOrder As Long) As Long
-Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
+Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hWnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
 
 Public Function CheckFileExists(FilePath As String) As Boolean
     On Error GoTo ERR
@@ -64,6 +65,7 @@ Open App.Path & "\cfg\cfg.txt" For Output As #3
 Print #3, Locale
 Print #3, DNSMode
 Print #3, LANIP
+Print #3, Mirror
 Close #3
 End Sub
 ' Returns an array with the local IP addresses (as strings).

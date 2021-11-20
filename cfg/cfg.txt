@@ -1,3 +1,4 @@
-zh-cn
-hosts
+es-es
+local
 127.0.0.1
+cloudflare

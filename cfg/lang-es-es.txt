@@ -5,13 +5,13 @@ Comprobando el entorno ... (1/5)
 Falta el servidor Apache httpd. Vuelva a descargar el programa!
 Falta php7, vuelva a descargar el programa!
 Falta el servidor DNSAgent, vuelva a descargar el programa!
-Escribiendo el config de Apache httpd ... (2/5)
-Iniciando el servidor DNSAgent ... (3/5)
-Instalacion del certificado SSL ... (4/5)
-Iniciando el servidor Apache httpd ... (5/5)
+Escribiendo el config de httpd ... (2/5)
+Configurar la resolucion del dominio ... (3/5)
+Iniciando el servidor httpd ... (4/5)
+Prueba de conexion ... (5/5)
 El servidor de SMMWE se esta ejecutando.
 Abrir la configuracion adaptador
-Escuchando servidor ...
+Esperando el juego ...
 Metadatos de nivel de analisis
 subir los metadatos
 a la base de datos en l¨ªnea
@@ -42,3 +42,6 @@ Primero inicie el servidor.
 Otros
 Editar la config del servidor
 Prueba de inicio
+El certificado raiz de CA no esta instalado y se instalara ahora.
+En el cuadro de aviso que aparece a continuacion, haga clic en Permitir / Aceptar.
+Espejo

@@ -5,13 +5,13 @@ Checking runtime ... (1/5)
 Apache httpd server is missing, please re-download the program!
 php7 is missing, please re-download the program!
 DNSAgent DNS server is missing, please re-download the program!
-Writing Apache httpd config ... (2/5)
-Starting DNSAgent DNS server ... (3/5)
-Installing SSL certificate ... (4/5)
-Starting Apache httpd server ... (5/5)
+Writing httpd config ... (2/5)
+Configuring domain resolution ... (3/5)
+Starting httpd server ... (4/5)
+Testing connection ... (5/5)
 SMMWE Cloud Private Server is runing.
 Open adapter settings
-Listening server ...
+Waiting for the game ...
 1
 1
 1
@@ -42,3 +42,6 @@ Please start the server first.
 Others
 Edit server config file
 Startup test
+CA root certificate is not installed, and it will be installed now.
+In the prompt box that pops up next, please click Allow/OK.
+Mirror
