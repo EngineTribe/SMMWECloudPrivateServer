@@ -1,8 +1,10 @@
 <?php
 set_time_limit(0);
 global $config;
+global $domain;
 //load config
 $config = include($_SERVER['DOCUMENT_ROOT'] . "/config.php");
+$domain = include($_SERVER['DOCUMENT_ROOT'] . "/domain.php");
 if ($config['linux_mode'] == true) {
     require_once("autoload-linux.php");
 } else {
@@ -51,6 +53,7 @@ define('etiquetas', [
 function get_level($level_name)
 {
     global $config;
+    global $domain;
     if (file_exists($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe")) {
         $return_data = file_get_contents($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe");
         return $return_data;
@@ -58,7 +61,7 @@ function get_level($level_name)
         //download the level
         logtovb("Downloading level " . $level_name . " ...");
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $config['smmwe_cloud_url_root'] . rawurlencode($level_name) . ".swe");
+        curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . rawurlencode($level_name) . ".swe");
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_TIMEOUT, 10);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -222,11 +225,11 @@ function gen_metadata_by_id($level_id)
 
 function list_levels_byname($page)
 {
-    global $config;
+    global $domain;
     logtovb("Listing levels ...");
     $page_om = ceil($page / 20);
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, $config['smmwe_cloud_url_root'] . "?apiv3-filename");
+    curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . "?apiv3-filename");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -242,11 +245,11 @@ function list_levels_byname($page)
 
 function list_levels_newarrival($page)
 {
-    global $config;
+    global $domain;
     logtovb("Listing levels ...");
     $page_om = ceil($page / 20);
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, $config['smmwe_cloud_url_root'] . "?apiv3-filename-time");
+    curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . "?apiv3-filename-time");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -262,10 +265,11 @@ function list_levels_newarrival($page)
 
 function upload_level($level_name, $level_data, $level_apariencia, $level_label1, $level_label2)
 {
+    global $domain;
     global $config;
     logtovb("Uploading level " . rawurldecode($level_name) . " ...");
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, $config['smmwe_cloud_url_api'] . "?upload=" . $level_name . '.swe&key=yidaozhan-gq-franyer-farias-apiv2');
+    curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_api'] . "?upload=" . $level_name . '.swe&key=yidaozhan-gq-franyer-farias-apiv2');
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 0);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -395,9 +399,9 @@ function logtovb($log)
 
 function get_storage()
 {
-    global $config;
+    global $domain;
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, $config['smmwe_cloud_url_root'] . "?apiv3-diskspace");
+    curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . "?apiv3-diskspace");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -410,9 +414,9 @@ function get_storage()
 
 function get_max_files()
 {
-    global $config;
+    global $domain;
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, $config['smmwe_cloud_url_root'] . "?apiv3-maxfiles");
+    curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . "?apiv3-maxfiles");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
