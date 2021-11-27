@@ -32,23 +32,24 @@ define('etiquetas', [
     'En solitario',
     'Link'
 ]);
-    define('etiquetas_en', [
-        'Standard',
-        'Puzzle-solving',
-        'Speedrun',
-        'Autoscroll',
-        'Auto-mario',
-        'Short and Sweet',
-        'Multiplayer Versus',
-        'Themed',
-        'Music',
-        'Art',
-        'Technical',
-        'Shooter',
-        'Boss battle',
-        'Single player',
-        'Link'
-    ]);
+
+define('etiquetas_en', [
+    'Standard',
+    'Puzzle-solving',
+    'Speedrun',
+    'Autoscroll',
+    'Auto-mario',
+    'Short and Sweet',
+    'Multiplayer Versus',
+    'Themed',
+    'Music',
+    'Art',
+    'Technical',
+    'Shooter',
+    'Boss battle',
+    'Single player',
+    'Link'
+]);
 
 function get_level($level_name)
 {
@@ -63,30 +64,17 @@ function get_level($level_name)
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . rawurlencode($level_name) . ".swe");
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($curl, CURLOPT_HEADER, true);
-        $return_data = curl_exec($curl);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+        $return_data = str_replace("\0", "", curl_exec($curl));
         curl_close($curl);
-        foreach (explode("\r\n", $return_data) as $v) {
-            if (substr($v, 0, 8) == "location") {
-                $level_url = str_replace("location: ", "", $v);
-                $curl = curl_init();
-                curl_setopt($curl, CURLOPT_URL, $level_url);
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-                curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($curl, CURLOPT_HEADER, false);
-                $return_data = str_replace("\0", "", curl_exec($curl));
-                curl_close($curl);
-                if ($config['cache_levels'] == true) {
-                    file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe", $return_data);
-                };
-                return $return_data;
-            };
+        if ($config['cache_levels'] == true) {
+            file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/level_cache/" . $level_name . ".swe", $return_data);
         };
+        return $return_data;
     };
 };
 
@@ -111,7 +99,7 @@ function parse_level_metadata($level_name, $level_data_args)
     } else {
         $level_apariencia = strval($level_data["MAIN"]["AJUSTES"][0]['apariencia']);
     };
-
+    
     if (is_null($level_data) == true) {
         $level_date = "01/01/1970";
     } else {
@@ -185,9 +173,10 @@ function get_metadata_by_id($level_id, $metadata)
     Client::initialize($config['leancloud_api_id'], $config['leancloud_api_key'], $config['leancloud_master_key']);
     $query = new Query("Metadata");
     $query->equalTo("level_id", $level_id);
-    $return_data = $query->first();
-    $return_data = $query->find();
-    return json_decode(str_replace("\u0000", "", json_encode(object_array($return_data[0]))), true)["LeanCloud\LeanObject_data"][$metadata];
+    $query->select(strval($metadata));
+    $metadatas_query = $query->first();
+    $return_data = $metadatas_query->get(strval($metadata));
+    return $return_data;
 };
 
 function get_metadata_by_name($level_name, $metadata)
@@ -196,9 +185,10 @@ function get_metadata_by_name($level_name, $metadata)
     Client::initialize($config['leancloud_api_id'], $config['leancloud_api_key'], $config['leancloud_master_key']);
     $query = new Query("Metadata");
     $query->equalTo("level_name", $level_name);
-    $return_data = $query->first();
-    $return_data = $query->find();
-    return json_decode(str_replace("\u0000", "", json_encode(object_array($return_data[0]))), true)["LeanCloud\LeanObject_data"][$metadata];
+    $query->select(strval($metadata));
+    $metadatas_query = $query->first();
+    $return_data = $metadatas_query->get(strval($metadata));
+    return $return_data;
 };
 
 function gen_metadata_by_name($level_name)
@@ -207,9 +197,39 @@ function gen_metadata_by_name($level_name)
     Client::initialize($config['leancloud_api_id'], $config['leancloud_api_key'], $config['leancloud_master_key']);
     $query = new Query("Metadata");
     $query->equalTo("level_name", $level_name);
-    $return_data = $query->first();
-    $return_data = $query->find();
-    return json_decode(str_replace("\u0000", "", json_encode(object_array($return_data[0]))), true)["LeanCloud\LeanObject_data"];
+    $query->select("-objectId", "-createdAt", "-updatedAt");
+    $metadatas_query = $query->first();
+    $return_data['level_name'] = $level_name;
+    $return_data['level_id'] = $metadatas_query->get("level_id");
+    $return_data['level_author'] = $metadatas_query->get("level_author");
+    $return_data['level_apariencia'] = $metadatas_query->get("level_apariencia");
+    $return_data['level_entorno'] = "0";
+    $return_data['level_label1'] = $metadatas_query->get("level_label1");
+    $return_data['level_label2'] = $metadatas_query->get("level_label2");
+    $return_data['level_date'] = $metadatas_query->get("level_date");
+    return $return_data;
+};
+
+function search_by_author($level_author)
+{
+    global $config;
+    Client::initialize($config['leancloud_api_id'], $config['leancloud_api_key'], $config['leancloud_master_key']);
+    $query = new Query("Metadata");
+    $query->contains("level_author", $level_author);
+    $query->select("-objectId", "-createdAt", "-updatedAt");
+    $count=0;
+    $metadatas_query = $query->find();
+    foreach($metadatas_query as $v) {
+        $level_label1=$v->get("level_label1");
+        $level_label2=$v->get("level_label1");
+        if (($level_label1 === "Tradicional") && ($level_label2 === "Tradicional")) {
+            $level_label2 = "---";
+        };
+        $level_etiquetas = $level_label1 . "," . $level_label2;
+        $result[$count] = array("name" => $v->get("level_name"), "img" => "https://smmwe.online/new_level.png", "likes" => "0", "downloads" => "1", "comments" => "0", "dislikes" => "0", "intentos" => "0", "muertes" => "0", "victorias" => "0", "apariencia" => $v->get("level_apariencia"), "entorno" => "0", "etiquetas" => $level_etiquetas, "featured" => "0", "user_data" => array("data" => "no", "completed" => "no", "liked" => "0"), "record" => array("record" => "no"), "date" => $v->get("level_date"), "author" => $v->get("level_author"), "authorimg" => "https://smmwe.online/favicon.png", "description" => urlencode("Sin Descripción"), "id" => $v->get("level_id"));
+        $count=$count+1;
+    };
+    return $result;
 };
 
 function gen_metadata_by_id($level_id)
@@ -218,9 +238,17 @@ function gen_metadata_by_id($level_id)
     Client::initialize($config['leancloud_api_id'], $config['leancloud_api_key'], $config['leancloud_master_key']);
     $query = new Query("Metadata");
     $query->equalTo("level_id", $level_id);
-    $return_data = $query->first();
-    $return_data = $query->find();
-    return json_decode(str_replace("\u0000", "", json_encode(object_array($return_data[0]))), true)["LeanCloud\LeanObject_data"];
+    $query->select("-objectId", "-createdAt", "-updatedAt");
+    $metadatas_query = $query->first();
+    $return_data['level_name'] = $metadatas_query->get("level_name");
+    $return_data['level_id'] = $level_id;
+    $return_data['level_author'] = $metadatas_query->get("level_author");
+    $return_data['level_apariencia'] = $metadatas_query->get("level_apariencia");
+    $return_data['level_entorno'] = "0";
+    $return_data['level_label1'] = $metadatas_query->get("level_label1");
+    $return_data['level_label2'] = $metadatas_query->get("level_label2");
+    $return_data['level_date'] = $metadatas_query->get("level_date");
+    return $return_data;
 };
 
 function list_levels_byname($page)
@@ -231,7 +259,7 @@ function list_levels_byname($page)
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . "?apiv3-filename");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 0);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($curl, CURLOPT_POST, 1);
@@ -251,7 +279,7 @@ function list_levels_newarrival($page)
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_root'] . "?apiv3-filename-time");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 0);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($curl, CURLOPT_POST, 1);
@@ -266,7 +294,6 @@ function list_levels_newarrival($page)
 function upload_level($level_name, $level_data, $level_apariencia, $level_label1, $level_label2)
 {
     global $domain;
-    global $config;
     logtovb("Uploading level " . rawurldecode($level_name) . " ...");
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $domain['smmwe_cloud_url_api'] . "?upload=" . $level_name . '.swe&key=yidaozhan-gq-franyer-farias-apiv2');
@@ -462,33 +489,46 @@ if ($requests['type'] === "login") {
     //get stage details
     if ($requests["by"] === "detailed_search") {
         logtovb("Loading course world ...");
-        $num_rows = get_max_files();
-        $rows_perpage = 10;
-        $max_pages = ceil($num_rows / 10);
-        if ($requests['sort'] === "popular") {
-            $level_list = list_levels_byname($requests['page']);
-        } else {
-            $level_list = list_levels_newarrival($requests['page']);
-        };
-        $result[0] = get_result(str_replace(".swe", "", $level_list[0]));
-        $result[1] = get_result(str_replace(".swe", "", $level_list[1]));
-        $result[2] = get_result(str_replace(".swe", "", $level_list[2]));
-        $result[3] = get_result(str_replace(".swe", "", $level_list[3]));
-        $result[4] = get_result(str_replace(".swe", "", $level_list[4]));
-        $result[5] = get_result(str_replace(".swe", "", $level_list[5]));
-        $result[6] = get_result(str_replace(".swe", "", $level_list[6]));
-        $result[7] = get_result(str_replace(".swe", "", $level_list[7]));
-        $result[8] = get_result(str_replace(".swe", "", $level_list[8]));
-        $result[9] = get_result(str_replace(".swe", "", $level_list[9]));
-        logtovb("All the metadatas were loaded, now you can refresh.");
-        $result_tmp=substr(str_replace("\"result\":{", "\"result\":[{", urldecode(json_encode(array("type" => "detailed_search", "num_rows" => strval($num_rows), "rows_perpage" => strval($rows_perpage), "pages" => strval($max_pages), "result" => $result), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))), 0, -3) . "}]}";
-        if ($config['tag_language'] == 'en') {
-            for ($x = 0; $x <= 14; $x++) {
-                $result_tmp=str_replace(etiquetas[$x],etiquetas_en[$x],$result_tmp);
+        if (is_null($requests['author'])) {
+            $num_rows = get_max_files();
+            $rows_perpage = 10;
+            $max_pages = ceil($num_rows / 10);
+            if ($requests['sort'] === "popular") {
+                $level_list = list_levels_byname($requests['page']);
+            } else {
+                $level_list = list_levels_newarrival($requests['page']);
+            };
+            $result[0] = get_result(str_replace(".swe", "", $level_list[0]));
+            $result[1] = get_result(str_replace(".swe", "", $level_list[1]));
+            $result[2] = get_result(str_replace(".swe", "", $level_list[2]));
+            $result[3] = get_result(str_replace(".swe", "", $level_list[3]));
+            $result[4] = get_result(str_replace(".swe", "", $level_list[4]));
+            $result[5] = get_result(str_replace(".swe", "", $level_list[5]));
+            $result[6] = get_result(str_replace(".swe", "", $level_list[6]));
+            $result[7] = get_result(str_replace(".swe", "", $level_list[7]));
+            $result[8] = get_result(str_replace(".swe", "", $level_list[8]));
+            $result[9] = get_result(str_replace(".swe", "", $level_list[9]));
+            logtovb("All the metadatas were loaded, now you can refresh.");
+            $result_tmp = substr(str_replace("\"result\":{", "\"result\":[{", urldecode(json_encode(array("type" => "detailed_search", "num_rows" => strval($num_rows), "rows_perpage" => strval($rows_perpage), "pages" => strval($max_pages), "result" => $result), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))), 0, -3) . "}]}";
+            if ($config['tag_language'] == 'en') {
+                for ($x = 0; $x <= 14; $x++) {
+                    $result_tmp = str_replace(etiquetas[$x], etiquetas_en[$x], $result_tmp);
+                };
             };
             echo $result_tmp;
+            return;
+        } else {
+            $result=search_by_author($requests['author']);
+            logtovb("All the metadatas were loaded, now you can refresh.");
+            $result_tmp = substr(str_replace("\"result\":{", "\"result\":[{", urldecode(json_encode(array("type" => "detailed_search", "num_rows" => "1", "rows_perpage" => count($result), "pages" => "1", "result" =>$result), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))), 0, -3) . "}]}";
+            if ($config['tag_language'] == 'en') {
+                for ($x = 0; $x <= 14; $x++) {
+                    $result_tmp = str_replace(etiquetas[$x], etiquetas_en[$x], $result_tmp);
+                };
+            };
+            echo $result_tmp;
+            return;
         };
-        return;
     } elseif ($requests["by"] === "file") {
         echo json_encode(array("data" => get_level(get_metadata_by_id($requests['id'], "level_name"))));
         return;

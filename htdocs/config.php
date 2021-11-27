@@ -15,7 +15,7 @@ return array (
 // Tag Language / Idioma de la etiqueta
 // "es" = Espa?ol
 // "en" = English
-  'tag_language' => 'en',
+  'tag_language' => 'es',
 
 // The following settings are for debugging only, please do not change
 // Las siguientes configuraciones son solo para depuraci¨®n, no las modifique
